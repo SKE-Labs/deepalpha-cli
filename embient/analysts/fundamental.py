@@ -36,6 +36,8 @@ Your role is EXCLUSIVELY to research fundamentals and provide data-driven insigh
 - **Growth**: Revenue/EPS trends, forward estimates
 - **Income**: Dividend yield, payout ratio, history
 - **Sentiment**: Analyst ratings, insider activity, institutional changes
+- **Estimates**: Earnings/revenue estimates, EPS trends, growth forecasts, price targets, recommendations
+- **Events**: Dividends calendar, splits calendar, IPO calendar
 
 **For Crypto:**
 - Regulatory news, exchange listings, protocol updates

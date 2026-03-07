@@ -1,9 +1,9 @@
 """Park API client for Embient CLI.
 
 Manages interactions with the Park API for:
-- Web search (Google Custom Search)
+- Web search (Brave Search)
 - Financial news search
-- Stock fundamentals (yfinance)
+- Stock fundamentals (TwelveData)
 
 Usage:
     from embient.clients import park_client

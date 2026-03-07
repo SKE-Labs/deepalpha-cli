@@ -465,7 +465,7 @@ class BasementClient:
 
         Args:
             token: JWT authentication token
-            symbol: Ticker symbol (e.g., "X:BTC/USDT")
+            symbol: Ticker symbol (e.g., "BTC/USD")
 
         Returns:
             Dict with currentPrice, priceChange, priceChangePercent, etc.

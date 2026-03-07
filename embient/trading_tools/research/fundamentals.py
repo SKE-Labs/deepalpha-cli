@@ -27,6 +27,16 @@ class FundamentalsSchema(BaseModel):
         "insider_activity",
         "institutional_holders",
         "earnings_calendar",
+        "price_target",
+        "recommendations",
+        "earning_estimate",
+        "revenue_estimate",
+        "eps_trend",
+        "eps_revisions",
+        "growth_estimates",
+        "dividends_calendar",
+        "splits_calendar",
+        "ipo_calendar",
     ] = Field(default="overview", description="Type of fundamental data to retrieve")
 
 
@@ -35,7 +45,7 @@ async def get_fundamentals(
     ticker: str,
     data_type: str = "overview",
 ) -> str:
-    """Fetches fundamental data for a stock ticker via yfinance.
+    """Fetches fundamental data for a stock ticker via TwelveData.
 
     Usage:
     - Start with 'overview' for key metrics and valuation
@@ -52,6 +62,16 @@ async def get_fundamentals(
     - insider_activity: Recent insider transactions
     - institutional_holders: Major institutional investors
     - earnings_calendar: Next earnings date and estimates
+    - price_target: Analyst price targets
+    - recommendations: Buy/sell/hold consensus
+    - earning_estimate: Analyst earnings forecasts
+    - revenue_estimate: Revenue projections
+    - eps_trend: EPS trend analysis
+    - eps_revisions: Changes to EPS estimates
+    - growth_estimates: Growth rate forecasts
+    - dividends_calendar: Upcoming dividend dates
+    - splits_calendar: Upcoming stock splits
+    - ipo_calendar: Upcoming IPOs
 
     IMPORTANT: Only works for stocks (not crypto). Use get_financial_news for crypto.
     IMPORTANT: Requires authentication. Run 'embient login' first.

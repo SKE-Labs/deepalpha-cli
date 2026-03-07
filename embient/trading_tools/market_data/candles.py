@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_symbol(symbol: str) -> str:
-    """Normalize symbol by removing exchange prefixes like 'X:' or 'BINANCE:'."""
+    """Normalize symbol by removing exchange prefixes like 'BINANCE:' or 'COINBASE:'."""
     # Remove common prefixes
-    prefixes = ["X:", "BINANCE:", "COINBASE:", "KRAKEN:"]
+    prefixes = ["BINANCE:", "COINBASE:", "KRAKEN:"]
     for prefix in prefixes:
         if symbol.upper().startswith(prefix):
             symbol = symbol[len(prefix) :]

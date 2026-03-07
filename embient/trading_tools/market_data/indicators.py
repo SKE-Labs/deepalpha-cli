@@ -54,7 +54,7 @@ async def get_indicator(
         raise ToolException("Not authenticated. Please run 'embient login' first.")
 
     # Normalize symbol
-    prefixes = ["X:", "BINANCE:", "COINBASE:"]
+    prefixes = ["BINANCE:", "COINBASE:"]
     for prefix in prefixes:
         if symbol.upper().startswith(prefix):
             symbol = symbol[len(prefix) :]
