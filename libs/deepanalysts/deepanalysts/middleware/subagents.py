@@ -104,26 +104,26 @@ Analyze [SYMBOL] on [EXCHANGE] with [INTERVAL] timeframe.
 
 ## Workflow Rules
 
-- **Sequential**: technical_analyst -> signal_manager (signal needs full analysis context)
-- **Parallel**: technical + fundamental (independent - run simultaneously)
+- **Sequential**: Run dependent analyses in order (e.g., analysis first, then act on findings)
+- **Parallel**: Run independent analyses simultaneously for speed
 
 <good-example>
 # Parallel: independent analyses
-task(subagent="technical_analyst", description="Analyze BTCUSDT on Binance H4...")
-task(subagent="fundamental_analyst", description="Check news for BTCUSDT...")
+task(subagent="technical_analyst", description="Analyze BTC/USD on Binance H4...")
+task(subagent="fundamental_analyst", description="Research BTC/USD news and earnings...")
 </good-example>
 
 <bad-example>
-# Wrong: signal_manager without analysis context
-task(subagent="signal_manager", description="Create signal for BTCUSDT...")
-# MUST include full technical analysis (entry, SL, TP, confidence) in description
+# Wrong: vague task without context
+task(subagent="technical_analyst", description="Analyze BTC/USD")
+# MUST include full context (symbol, exchange, timeframe, specific question) in description
 </bad-example>
 
 ## Important
 
 - Subagent results are invisible to user - YOU must synthesize and present
 - Trust subagent outputs - they are specialized experts
-- After signal creation, use draw_on_chart to visualize position
+- After subagents return, act on findings using your own tools
 - Parallelize independent analyses for speed
 """
 
@@ -134,7 +134,7 @@ Use `task` tool to spawn specialized analysts. Subagent results are invisible to
 
 After subagents return:
 - Synthesize findings into clear response
-- Use draw_on_chart to visualize if applicable
+- Act on findings using your own tools (only use tools available to you)
 - Present to user with disclaimer
 
 Note: Include user images in task description when available.

@@ -166,7 +166,7 @@ def create_deep_analysts(
 
         # Invoke with session context
         result = await agent.ainvoke(
-            {"messages": [HumanMessage(content="Analyze BTCUSDT")]},
+            {"messages": [HumanMessage(content="Analyze BTC/USD")]},
             config={
                 "configurable": {
                     "thread_id": "abc123",
