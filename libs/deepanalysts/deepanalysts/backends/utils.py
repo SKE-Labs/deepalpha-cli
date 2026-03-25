@@ -5,9 +5,12 @@ helpers used by backends and the composite router. Structured helpers
 enable composition without fragile string parsing.
 """
 
+import os
 import re
+import warnings
+from collections.abc import Sequence
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
 import wcmatch.glob as wcglob
@@ -18,13 +21,229 @@ EMPTY_CONTENT_WARNING = "System reminder: File exists but has empty contents"
 MAX_LINE_LENGTH = 10000
 LINE_NUMBER_WIDTH = 6
 TOOL_RESULT_TOKEN_LIMIT = 20000  # Same threshold as eviction
-TRUNCATION_GUIDANCE = (
-    "... [results truncated, try being more specific with your parameters]"
-)
+TRUNCATION_GUIDANCE = "... [results truncated, try being more specific with your parameters]"
+
+FileType = Literal["text", "image", "audio", "video", "file"]
+"""Classification of a file by extension."""
+
+_EXTENSION_TO_FILE_TYPE: dict[str, FileType] = {
+    # Images
+    ".png": "image",
+    ".jpeg": "image",
+    ".jpg": "image",
+    ".webp": "image",
+    ".heic": "image",
+    ".heif": "image",
+    # Video
+    ".mp4": "video",
+    ".mpeg": "video",
+    ".mov": "video",
+    ".avi": "video",
+    ".flv": "video",
+    ".mpg": "video",
+    ".webm": "video",
+    ".wmv": "video",
+    ".3gpp": "video",
+    # Audio
+    ".wav": "audio",
+    ".mp3": "audio",
+    ".aiff": "audio",
+    ".aac": "audio",
+    ".ogg": "audio",
+    ".flac": "audio",
+    # Files
+    ".pdf": "file",
+    ".ppt": "file",
+    ".pptx": "file",
+}
 
 # Re-export protocol types for backwards compatibility
 FileInfo = _FileInfo
 GrepMatch = _GrepMatch
+
+
+def _normalize_content(file_data: dict[str, Any]) -> str:
+    """Normalize file_data content to a plain string.
+
+    This is the backwards-compatibility conversion point for the
+    legacy ``list[str]`` file format. New code stores ``content`` as a
+    plain ``str``; old data may still contain a list of lines.
+
+    Args:
+        file_data: FileData dict with ``content`` key.
+
+    Returns:
+        Content as a single string.
+    """
+    content = file_data["content"]
+    if isinstance(content, list):
+        return "\n".join(content)
+    return content
+
+
+def _get_file_type(path: str) -> FileType:
+    """Classify a file by its extension.
+
+    Args:
+        path: File path to classify.
+
+    Returns:
+        One of ``"text"``, ``"image"``, ``"audio"``, ``"video"``, or ``"file"``.
+        Defaults to ``"text"`` for unrecognized extensions.
+    """
+    return _EXTENSION_TO_FILE_TYPE.get(PurePosixPath(path).suffix.lower(), "text")
+
+
+def _to_legacy_file_data(file_data: dict[str, Any]) -> dict[str, Any]:
+    r"""Convert a v2 FileData dict to the legacy (v1) storage format.
+
+    The v1 format stores content as ``list[str]`` (lines split on ``\\n``)
+    and omits the ``encoding`` field.
+
+    Args:
+        file_data: FileData dict with ``content`` as str.
+
+    Returns:
+        Dict with ``content`` as ``list[str]``, plus timestamps. No ``encoding`` key.
+    """
+    content = file_data["content"]
+    if isinstance(content, list):
+        return file_data  # already v1
+    return {
+        "content": content.split("\n"),
+        "created_at": file_data["created_at"],
+        "modified_at": file_data["modified_at"],
+    }
+
+
+def validate_path(path: str, *, allowed_prefixes: Sequence[str] | None = None) -> str:
+    r"""Validate and normalize file path for security.
+
+    Ensures paths are safe by preventing directory traversal attacks
+    and enforcing consistent formatting. All paths are normalized to use
+    forward slashes and start with a leading slash.
+
+    Rejects Windows absolute paths (e.g., ``C:/...``) to maintain consistency.
+
+    Args:
+        path: The path to validate and normalize.
+        allowed_prefixes: Optional list of allowed path prefixes.
+
+    Returns:
+        Normalized canonical path starting with ``/``.
+
+    Raises:
+        ValueError: If path contains traversal sequences (``..`` or ``~``), is a
+            Windows absolute path, or does not start with an allowed prefix.
+    """
+    parts = PurePosixPath(path.replace("\\", "/")).parts
+    if ".." in parts or path.startswith("~"):
+        msg = f"Path traversal not allowed: {path}"
+        raise ValueError(msg)
+
+    if re.match(r"^[a-zA-Z]:", path):
+        msg = f"Windows absolute paths are not supported: {path}. Please use virtual paths starting with / (e.g., /workspace/file.txt)"
+        raise ValueError(msg)
+
+    normalized = os.path.normpath(path)
+    normalized = normalized.replace("\\", "/")
+
+    if not normalized.startswith("/"):
+        normalized = f"/{normalized}"
+
+    # Defense-in-depth: verify normpath didn't produce traversal
+    if ".." in normalized.split("/"):
+        msg = f"Path traversal detected after normalization: {path} -> {normalized}"
+        raise ValueError(msg)
+
+    if allowed_prefixes is not None and not any(normalized.startswith(prefix) for prefix in allowed_prefixes):
+        msg = f"Path must start with one of {allowed_prefixes}: {path}"
+        raise ValueError(msg)
+
+    return normalized
+
+
+def _normalize_path(path: str | None) -> str:
+    """Normalize a path to canonical form.
+
+    Converts path to absolute form starting with /, removes trailing slashes
+    (except for root).
+
+    Args:
+        path: Path to normalize (None defaults to "/")
+
+    Returns:
+        Normalized path starting with / (without trailing slash unless root)
+
+    Raises:
+        ValueError: If path is empty string after strip.
+    """
+    path = path or "/"
+    if not path or path.strip() == "":
+        msg = "Path cannot be empty"
+        raise ValueError(msg)
+
+    normalized = path if path.startswith("/") else "/" + path
+
+    if normalized != "/" and normalized.endswith("/"):
+        normalized = normalized.rstrip("/")
+
+    return normalized
+
+
+def _filter_files_by_path(files: dict[str, Any], normalized_path: str) -> dict[str, Any]:
+    """Filter files dict by normalized path, handling exact file matches and directory prefixes.
+
+    Args:
+        files: Dictionary mapping file paths to file data.
+        normalized_path: Normalized path from _normalize_path.
+
+    Returns:
+        Filtered dictionary of files matching the path.
+    """
+    if normalized_path in files:
+        return {normalized_path: files[normalized_path]}
+
+    if normalized_path == "/":
+        return {fp: fd for fp, fd in files.items() if fp.startswith("/")}
+
+    dir_prefix = normalized_path + "/"
+    return {fp: fd for fp, fd in files.items() if fp.startswith(dir_prefix)}
+
+
+def slice_read_response(
+    file_data: dict[str, Any],
+    offset: int,
+    limit: int,
+) -> str:
+    """Slice file data to the requested line range without formatting.
+
+    Returns raw text for the requested window. Line-number formatting
+    is applied downstream by the middleware layer.
+
+    Args:
+        file_data: FileData dict.
+        offset: Line offset (0-indexed).
+        limit: Maximum number of lines.
+
+    Returns:
+        Raw sliced content string on success, or error message string
+        when the offset exceeds the file length.
+    """
+    content = _normalize_content(file_data)
+
+    if not content or content.strip() == "":
+        return content
+
+    lines = content.splitlines()
+    start_idx = offset
+    end_idx = min(start_idx + limit, len(lines))
+
+    if start_idx >= len(lines):
+        return f"Error: Line offset {offset} exceeds file length ({len(lines)} lines)"
+
+    selected_lines = lines[start_idx:end_idx]
+    return "\n".join(selected_lines)
 
 
 def sanitize_tool_call_id(tool_call_id: str) -> str:
@@ -77,9 +296,7 @@ def format_content_with_line_numbers(
                 else:
                     # Continuation chunks: use decimal notation (e.g., 5.1, 5.2)
                     continuation_marker = f"{line_num}.{chunk_idx}"
-                    result_lines.append(
-                        f"{continuation_marker:>{LINE_NUMBER_WIDTH}}\t{chunk}"
-                    )
+                    result_lines.append(f"{continuation_marker:>{LINE_NUMBER_WIDTH}}\t{chunk}")
 
     return "\n".join(result_lines)
 
@@ -101,28 +318,49 @@ def check_empty_content(content: str) -> str | None:
 def file_data_to_string(file_data: dict[str, Any]) -> str:
     """Convert FileData to plain string content.
 
+    Handles both v1 (content as list[str]) and v2 (content as str) formats.
+
     Args:
         file_data: FileData dict with 'content' key
 
     Returns:
-        Content as string with lines joined by newlines
+        Content as a single string.
     """
-    return "\n".join(file_data["content"])
+    return _normalize_content(file_data)
 
 
-def create_file_data(content: str, created_at: str | None = None) -> dict[str, Any]:
+def create_file_data(
+    content: str,
+    created_at: str | None = None,
+    encoding: str = "utf-8",
+    *,
+    file_format: str = "v1",
+) -> dict[str, Any]:
     """Create a FileData object with timestamps.
 
     Args:
-        content: File content as string
-        created_at: Optional creation timestamp (ISO format)
+        content: File content as string.
+        created_at: Optional creation timestamp (ISO format).
+        encoding: Content encoding — ``"utf-8"`` for text, ``"base64"`` for binary.
+            Only included in v2 format.
+        file_format: ``"v1"`` (default) stores content as ``list[str]``,
+            ``"v2"`` stores as plain ``str`` with ``encoding`` field.
 
     Returns:
-        FileData dict with content and timestamps
+        FileData dict with content and timestamps.
     """
-    lines = content.split("\n") if isinstance(content, str) else content
     now = datetime.now(UTC).isoformat()
 
+    if file_format == "v2":
+        return {
+            "content": content,
+            "encoding": encoding,
+            "created_at": created_at or now,
+            "modified_at": now,
+        }
+
+    # v1: legacy list[str] format
+    lines = content.split("\n") if isinstance(content, str) else content
     return {
         "content": lines,
         "created_at": created_at or now,
@@ -130,8 +368,14 @@ def create_file_data(content: str, created_at: str | None = None) -> dict[str, A
     }
 
 
-def update_file_data(file_data: dict[str, Any], content: str) -> dict[str, Any]:
+def update_file_data(
+    file_data: dict[str, Any],
+    content: str,
+) -> dict[str, Any]:
     """Update FileData with new content, preserving creation timestamp.
+
+    Detects the format (v1 vs v2) from the existing file_data and produces
+    the same format.
 
     Args:
         file_data: Existing FileData dict
@@ -140,9 +384,19 @@ def update_file_data(file_data: dict[str, Any], content: str) -> dict[str, Any]:
     Returns:
         Updated FileData dict
     """
-    lines = content.split("\n") if isinstance(content, str) else content
     now = datetime.now(UTC).isoformat()
 
+    # Detect v2 by presence of "encoding" field
+    if "encoding" in file_data:
+        return {
+            "content": content,
+            "encoding": file_data.get("encoding", "utf-8"),
+            "created_at": file_data["created_at"],
+            "modified_at": now,
+        }
+
+    # v1: legacy list[str] format
+    lines = content.split("\n") if isinstance(content, str) else content
     return {
         "content": lines,
         "created_at": file_data["created_at"],
@@ -215,9 +469,7 @@ def truncate_if_too_long(result: list[str] | str) -> list[str] | str:
     if isinstance(result, list):
         total_chars = sum(len(item) for item in result)
         if total_chars > TOOL_RESULT_TOKEN_LIMIT * 4:
-            return result[
-                : len(result) * TOOL_RESULT_TOKEN_LIMIT * 4 // total_chars
-            ] + [TRUNCATION_GUIDANCE]
+            return result[: len(result) * TOOL_RESULT_TOKEN_LIMIT * 4 // total_chars] + [TRUNCATION_GUIDANCE]
         return result
     # string
     if len(result) > TOOL_RESULT_TOKEN_LIMIT * 4:
@@ -291,9 +543,7 @@ def _glob_search_files(
         if not relative:
             relative = file_path.split("/")[-1]
 
-        if wcglob.globmatch(
-            relative, effective_pattern, flags=wcglob.BRACE | wcglob.GLOBSTAR
-        ):
+        if wcglob.globmatch(relative, effective_pattern, flags=wcglob.BRACE | wcglob.GLOBSTAR):
             matches.append((file_path, file_data["modified_at"]))
 
     matches.sort(key=lambda x: x[1], reverse=True)
@@ -338,9 +588,7 @@ def _grep_search_files(
     pattern: str,
     path: str | None = None,
     glob: str | None = None,
-    output_mode: Literal[
-        "files_with_matches", "content", "count"
-    ] = "files_with_matches",
+    output_mode: Literal["files_with_matches", "content", "count"] = "files_with_matches",
 ) -> str:
     """Search file contents for regex pattern.
 
@@ -374,11 +622,7 @@ def _grep_search_files(
     filtered = {fp: fd for fp, fd in files.items() if fp.startswith(normalized_path)}
 
     if glob:
-        filtered = {
-            fp: fd
-            for fp, fd in filtered.items()
-            if wcglob.globmatch(Path(fp).name, glob, flags=wcglob.BRACE)
-        }
+        filtered = {fp: fd for fp, fd in filtered.items() if wcglob.globmatch(Path(fp).name, glob, flags=wcglob.BRACE)}
 
     results: dict[str, list[tuple[int, str]]] = {}
     for file_path, file_data in filtered.items():
@@ -421,11 +665,7 @@ def grep_matches_from_files(
     filtered = {fp: fd for fp, fd in files.items() if fp.startswith(normalized_path)}
 
     if glob:
-        filtered = {
-            fp: fd
-            for fp, fd in filtered.items()
-            if wcglob.globmatch(Path(fp).name, glob, flags=wcglob.BRACE)
-        }
+        filtered = {fp: fd for fp, fd in filtered.items() if wcglob.globmatch(Path(fp).name, glob, flags=wcglob.BRACE)}
 
     matches: list[GrepMatch] = []
     for file_path, file_data in filtered.items():
@@ -455,9 +695,7 @@ def format_grep_matches(
     return _format_grep_results(build_grep_results_dict(matches), output_mode)
 
 
-def create_content_preview(
-    content_str: str, *, head_lines: int = 5, tail_lines: int = 5
-) -> str:
+def create_content_preview(content_str: str, *, head_lines: int = 5, tail_lines: int = 5) -> str:
     """Create a preview of content showing head and tail with truncation marker.
 
     This preserves both the beginning and end of the content, which is more useful
@@ -489,11 +727,7 @@ def create_content_preview(
     tail = [line[:1000] for line in lines[-tail_lines:]]
 
     head_sample = format_content_with_line_numbers(head, start_line=1)
-    truncation_notice = (
-        f"\n... [{len(lines) - head_lines - tail_lines} lines truncated] ...\n"
-    )
-    tail_sample = format_content_with_line_numbers(
-        tail, start_line=len(lines) - tail_lines + 1
-    )
+    truncation_notice = f"\n... [{len(lines) - head_lines - tail_lines} lines truncated] ...\n"
+    tail_sample = format_content_with_line_numbers(tail, start_line=len(lines) - tail_lines + 1)
 
     return head_sample + truncation_notice + tail_sample

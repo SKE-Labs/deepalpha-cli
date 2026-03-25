@@ -14,6 +14,16 @@ from typing import Any, Literal, NotRequired, TypeAlias
 from langchain.tools import ToolRuntime
 from typing_extensions import TypedDict
 
+FileFormat = Literal["v1", "v2"]
+r"""File storage format version.
+
+- ``'v1'``: Legacy format — ``content`` stored as ``list[str]`` (lines split
+    on ``\\n``), no ``encoding`` field.
+- ``'v2'``: Current format — ``content`` stored as a plain ``str`` (UTF-8 text
+    or base64-encoded binary), with an ``encoding`` field (``"utf-8"`` or
+    ``"base64"``).
+"""
+
 FileOperationError = Literal[
     "file_not_found",  # Download: file doesn't exist
     "permission_denied",  # Both: access denied
@@ -104,6 +114,79 @@ class GrepMatch(TypedDict):
     path: str
     line: int
     text: str
+
+
+class FileData(TypedDict):
+    """Data structure for storing file contents with metadata.
+
+    In v2 format, ``content`` is a plain string (UTF-8 text or base64-encoded
+    binary) and ``encoding`` indicates the encoding. In legacy v1 format,
+    ``content`` is ``list[str]`` and ``encoding`` is absent.
+    """
+
+    content: str
+    """File content as a plain string (utf-8 text or base64-encoded binary)."""
+
+    encoding: str
+    """Content encoding: ``"utf-8"`` for text, ``"base64"`` for binary."""
+
+    created_at: str
+    """ISO 8601 timestamp of file creation."""
+
+    modified_at: str
+    """ISO 8601 timestamp of last modification."""
+
+
+@dataclass
+class ReadResult:
+    """Result from backend read operations.
+
+    Attributes:
+        error: Error message on failure, None on success.
+        file_data: FileData dict on success, None on failure.
+    """
+
+    error: str | None = None
+    file_data: "FileData | None" = None
+
+
+@dataclass
+class LsResult:
+    """Result from backend ls operations.
+
+    Attributes:
+        error: Error message on failure, None on success.
+        entries: List of file info dicts on success, None on failure.
+    """
+
+    error: str | None = None
+    entries: list["FileInfo"] | None = None
+
+
+@dataclass
+class GrepResult:
+    """Result from backend grep operations.
+
+    Attributes:
+        error: Error message on failure, None on success.
+        matches: List of grep match dicts on success, None on failure.
+    """
+
+    error: str | None = None
+    matches: list["GrepMatch"] | None = None
+
+
+@dataclass
+class GlobResult:
+    """Result from backend glob operations.
+
+    Attributes:
+        error: Error message on failure, None on success.
+        matches: List of file info dicts on success, None on failure.
+    """
+
+    error: str | None = None
+    matches: list["FileInfo"] | None = None
 
 
 @dataclass

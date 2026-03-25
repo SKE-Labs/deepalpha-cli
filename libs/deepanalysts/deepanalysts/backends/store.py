@@ -6,7 +6,7 @@ Uses user_id for multi-tenant isolation instead of assistant_id.
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from langgraph.config import get_config
 from langgraph.store.base import BaseStore, Item
@@ -33,17 +33,24 @@ from deepanalysts.backends.utils import (
 if TYPE_CHECKING:
     from langchain.tools import ToolRuntime
 
+StateT = TypeVar("StateT")
+ContextT = TypeVar("ContextT")
+
 
 @dataclass
-class BackendContext:
-    """Context passed to namespace factory functions."""
+class BackendContext(Generic[StateT, ContextT]):
+    """Context passed to namespace factory functions.
 
-    state: Any
-    runtime: "ToolRuntime"
+    Generic over state and context types for type safety in
+    namespace factories.
+    """
+
+    state: StateT
+    runtime: Any  # Runtime[ContextT] when typed
 
 
 # Type alias for namespace factory functions
-NamespaceFactory = Callable[[BackendContext], tuple[str, ...]]
+NamespaceFactory = Callable[[BackendContext[Any, Any]], tuple[str, ...]]
 
 # Allowed characters in namespace components: alphanumeric, plus characters
 # common in user IDs (hyphen, underscore, dot, @, +, colon, tilde).
@@ -116,7 +123,7 @@ class StoreBackend(BackendProtocol):
 
                 Example::
 
-                    namespace=lambda ctx: ("filesystem", ctx.runtime.config["configurable"]["user_id"])
+                    namespace = lambda ctx: ("filesystem", ctx.runtime.config["configurable"]["user_id"])
         """
         self.runtime = runtime
         self._namespace = namespace
@@ -196,19 +203,13 @@ class StoreBackend(BackendProtocol):
         Raises:
             ValueError: If required fields are missing or have incorrect types.
         """
-        if "content" not in store_item.value or not isinstance(
-            store_item.value["content"], list
-        ):
+        if "content" not in store_item.value or not isinstance(store_item.value["content"], list):
             msg = f"Store item does not contain valid content field. Got: {store_item.value.keys()}"
             raise ValueError(msg)
-        if "created_at" not in store_item.value or not isinstance(
-            store_item.value["created_at"], str
-        ):
+        if "created_at" not in store_item.value or not isinstance(store_item.value["created_at"], str):
             msg = f"Store item does not contain valid created_at field. Got: {store_item.value.keys()}"
             raise ValueError(msg)
-        if "modified_at" not in store_item.value or not isinstance(
-            store_item.value["modified_at"], str
-        ):
+        if "modified_at" not in store_item.value or not isinstance(store_item.value["modified_at"], str):
             msg = f"Store item does not contain valid modified_at field. Got: {store_item.value.keys()}"
             raise ValueError(msg)
         return {
@@ -217,9 +218,7 @@ class StoreBackend(BackendProtocol):
             "modified_at": store_item.value["modified_at"],
         }
 
-    def _convert_file_data_to_store_value(
-        self, file_data: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _convert_file_data_to_store_value(self, file_data: dict[str, Any]) -> dict[str, Any]:
         """Convert FileData to a dict suitable for store.put().
 
         Args:
@@ -474,9 +473,7 @@ class StoreBackend(BackendProtocol):
             return EditResult(error=f"Error: {e}")
 
         content = file_data_to_string(file_data)
-        result = perform_string_replacement(
-            content, old_string, new_string, replace_all
-        )
+        result = perform_string_replacement(content, old_string, new_string, replace_all)
 
         if isinstance(result, str):
             return EditResult(error=result)
@@ -487,9 +484,7 @@ class StoreBackend(BackendProtocol):
         # Update file in store
         store_value = self._convert_file_data_to_store_value(new_file_data)
         store.put(namespace, file_path, store_value)
-        return EditResult(
-            path=file_path, files_update=None, occurrences=int(occurrences)
-        )
+        return EditResult(path=file_path, files_update=None, occurrences=int(occurrences))
 
     async def aedit(
         self,
@@ -516,9 +511,7 @@ class StoreBackend(BackendProtocol):
             return EditResult(error=f"Error: {e}")
 
         content = file_data_to_string(file_data)
-        result = perform_string_replacement(
-            content, old_string, new_string, replace_all
-        )
+        result = perform_string_replacement(content, old_string, new_string, replace_all)
 
         if isinstance(result, str):
             return EditResult(error=result)
@@ -529,9 +522,7 @@ class StoreBackend(BackendProtocol):
         # Update file in store using async method
         store_value = self._convert_file_data_to_store_value(new_file_data)
         await store.aput(namespace, file_path, store_value)
-        return EditResult(
-            path=file_path, files_update=None, occurrences=int(occurrences)
-        )
+        return EditResult(path=file_path, files_update=None, occurrences=int(occurrences))
 
     def grep_raw(
         self,
@@ -622,11 +613,7 @@ class StoreBackend(BackendProtocol):
             item = store.get(namespace, path)
 
             if item is None:
-                responses.append(
-                    FileDownloadResponse(
-                        path=path, content=None, error="file_not_found"
-                    )
-                )
+                responses.append(FileDownloadResponse(path=path, content=None, error="file_not_found"))
                 continue
 
             file_data = self._convert_store_item_to_file_data(item)
@@ -634,9 +621,7 @@ class StoreBackend(BackendProtocol):
             content_str = file_data_to_string(file_data)
             content_bytes = content_str.encode("utf-8")
 
-            responses.append(
-                FileDownloadResponse(path=path, content=content_bytes, error=None)
-            )
+            responses.append(FileDownloadResponse(path=path, content=content_bytes, error=None))
 
         return responses
 
@@ -650,11 +635,7 @@ class StoreBackend(BackendProtocol):
             item = await store.aget(namespace, path)
 
             if item is None:
-                responses.append(
-                    FileDownloadResponse(
-                        path=path, content=None, error="file_not_found"
-                    )
-                )
+                responses.append(FileDownloadResponse(path=path, content=None, error="file_not_found"))
                 continue
 
             file_data = self._convert_store_item_to_file_data(item)
@@ -662,9 +643,7 @@ class StoreBackend(BackendProtocol):
             content_str = file_data_to_string(file_data)
             content_bytes = content_str.encode("utf-8")
 
-            responses.append(
-                FileDownloadResponse(path=path, content=content_bytes, error=None)
-            )
+            responses.append(FileDownloadResponse(path=path, content=content_bytes, error=None))
 
         return responses
 

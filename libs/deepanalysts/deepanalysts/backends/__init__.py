@@ -7,14 +7,21 @@ from deepanalysts.backends.protocol import (
     BackendProtocol,
     EditResult,
     ExecuteResponse,
+    FileData,
     FileDownloadResponse,
+    FileFormat,
     FileInfo,
     FileUploadResponse,
+    GlobResult,
     GrepMatch,
+    GrepResult,
+    LsResult,
+    ReadResult,
     SandboxBackendProtocol,
     WriteResult,
 )
 from deepanalysts.backends.sandbox import BaseSandbox, RestrictedSubprocessBackend
+from deepanalysts.backends.state import StateBackend
 from deepanalysts.backends.store import (
     BackendContext,
     NamespaceFactory,
@@ -30,10 +37,16 @@ __all__ = [
     # Result types
     "EditResult",
     "ExecuteResponse",
+    "FileData",
     "FileDownloadResponse",
+    "FileFormat",
     "FileInfo",
     "FileUploadResponse",
+    "GlobResult",
     "GrepMatch",
+    "GrepResult",
+    "LsResult",
+    "ReadResult",
     "WriteResult",
     # Store types
     "BackendContext",
@@ -45,6 +58,7 @@ __all__ = [
     "FilesystemBackend",
     "LocalFilesystemBackend",
     "RestrictedSubprocessBackend",
+    "StateBackend",
     "StoreBackend",
 ]
 
