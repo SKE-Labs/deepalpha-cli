@@ -21,8 +21,7 @@ def test_version_matches_pyproject() -> None:
 
     # Compare versions
     assert __version__ == pyproject_version, (
-        f"Version mismatch: _version.py has '{__version__}' "
-        f"but pyproject.toml has '{pyproject_version}'"
+        f"Version mismatch: _version.py has '{__version__}' but pyproject.toml has '{pyproject_version}'"
     )
 
 

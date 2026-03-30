@@ -162,13 +162,9 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
             self._truncation_text = "...(argument truncated)"
         else:
             self._truncate_args_trigger = truncate_args_settings.get("trigger")
-            self._truncate_args_keep = truncate_args_settings.get(
-                "keep", ("messages", 20)
-            )
+            self._truncate_args_keep = truncate_args_settings.get("keep", ("messages", 20))
             self._max_arg_length = truncate_args_settings.get("max_length", 2000)
-            self._truncation_text = truncate_args_settings.get(
-                "truncation_text", "...(argument truncated)"
-            )
+            self._truncation_text = truncate_args_settings.get("truncation_text", "...(argument truncated)")
 
     def _get_backend(
         self,
@@ -255,9 +251,7 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
         """
         return [msg for msg in messages if not self._is_summary_message(msg)]
 
-    def _build_new_messages_with_path(
-        self, summary: str, file_path: str | None
-    ) -> list[AnyMessage]:
+    def _build_new_messages_with_path(self, summary: str, file_path: str | None) -> list[AnyMessage]:
         """Build the summary message with optional file path reference.
 
         Args:
@@ -290,9 +284,7 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
             )
         ]
 
-    def _should_truncate_args(
-        self, messages: list[AnyMessage], total_tokens: int
-    ) -> bool:
+    def _should_truncate_args(self, messages: list[AnyMessage], total_tokens: int) -> bool:
         """Check if argument truncation should be triggered.
 
         Args:
@@ -399,9 +391,7 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
             }
         return tool_call
 
-    def _truncate_args(
-        self, messages: list[AnyMessage]
-    ) -> tuple[list[AnyMessage], bool]:
+    def _truncate_args(self, messages: list[AnyMessage]) -> tuple[list[AnyMessage], bool]:
         """Truncate large tool call arguments in old messages.
 
         Only truncates arguments for write_file and edit_file tool calls,
@@ -485,11 +475,7 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
         existing_content = ""
         try:
             responses = backend.download_files([path])
-            if (
-                responses
-                and responses[0].content is not None
-                and responses[0].error is None
-            ):
+            if responses and responses[0].content is not None and responses[0].error is None:
                 existing_content = responses[0].content.decode("utf-8")
         except Exception as e:
             logger.debug(
@@ -560,11 +546,7 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
         existing_content = ""
         try:
             responses = await backend.adownload_files([path])
-            if (
-                responses
-                and responses[0].content is not None
-                and responses[0].error is None
-            ):
+            if responses and responses[0].content is not None and responses[0].error is None:
                 existing_content = responses[0].content.decode("utf-8")
         except Exception as e:
             logger.debug(
@@ -660,9 +642,7 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
                 }
             return None
 
-        messages_to_summarize, preserved_messages = self._partition_messages(
-            truncated_messages, cutoff_index
-        )
+        messages_to_summarize, preserved_messages = self._partition_messages(truncated_messages, cutoff_index)
 
         # Offload to backend first - warn if this fails but continue with summarization
         backend = self._get_backend(state, runtime)
@@ -743,9 +723,7 @@ class SummarizationMiddleware(BaseSummarizationMiddleware):
                 }
             return None
 
-        messages_to_summarize, preserved_messages = self._partition_messages(
-            truncated_messages, cutoff_index
-        )
+        messages_to_summarize, preserved_messages = self._partition_messages(truncated_messages, cutoff_index)
 
         # Offload to backend first - warn if this fails but continue with summarization
         backend = self._get_backend(state, runtime)

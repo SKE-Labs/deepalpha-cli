@@ -3,10 +3,7 @@
 try:
     import runloop_api_client
 except ImportError:
-    msg = (
-        "runloop_api_client package is required for RunloopBackend. "
-        "Install with `pip install runloop_api_client`."
-    )
+    msg = "runloop_api_client package is required for RunloopBackend. Install with `pip install runloop_api_client`."
     raise ImportError(msg)
 
 import os

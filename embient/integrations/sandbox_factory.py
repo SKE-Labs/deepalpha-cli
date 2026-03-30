@@ -302,10 +302,7 @@ def create_sandbox(
         (SandboxBackend, sandbox_id)
     """
     if provider not in _SANDBOX_PROVIDERS:
-        msg = (
-            f"Unknown sandbox provider: {provider}. "
-            f"Available providers: {', '.join(get_available_sandbox_types())}"
-        )
+        msg = f"Unknown sandbox provider: {provider}. Available providers: {', '.join(get_available_sandbox_types())}"
         raise ValueError(msg)
 
     sandbox_provider = _SANDBOX_PROVIDERS[provider]

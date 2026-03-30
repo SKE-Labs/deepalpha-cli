@@ -18,9 +18,7 @@ if TYPE_CHECKING:
 class ToolRenderer:
     """Base renderer for tool approval widgets."""
 
-    def get_approval_widget(
-        self, tool_args: dict[str, Any]
-    ) -> tuple[type[ToolApprovalWidget], dict[str, Any]]:
+    def get_approval_widget(self, tool_args: dict[str, Any]) -> tuple[type[ToolApprovalWidget], dict[str, Any]]:
         """Get the approval widget class and data for this tool.
 
         Args:
@@ -35,9 +33,7 @@ class ToolRenderer:
 class WriteFileRenderer(ToolRenderer):
     """Renderer for write_file tool - shows full file content."""
 
-    def get_approval_widget(
-        self, tool_args: dict[str, Any]
-    ) -> tuple[type[ToolApprovalWidget], dict[str, Any]]:
+    def get_approval_widget(self, tool_args: dict[str, Any]) -> tuple[type[ToolApprovalWidget], dict[str, Any]]:
         # Extract file extension for syntax highlighting
         file_path = tool_args.get("file_path", "")
         content = tool_args.get("content", "")
@@ -58,9 +54,7 @@ class WriteFileRenderer(ToolRenderer):
 class EditFileRenderer(ToolRenderer):
     """Renderer for edit_file tool - shows unified diff."""
 
-    def get_approval_widget(
-        self, tool_args: dict[str, Any]
-    ) -> tuple[type[ToolApprovalWidget], dict[str, Any]]:
+    def get_approval_widget(self, tool_args: dict[str, Any]) -> tuple[type[ToolApprovalWidget], dict[str, Any]]:
         file_path = tool_args.get("file_path", "")
         old_string = tool_args.get("old_string", "")
         new_string = tool_args.get("new_string", "")

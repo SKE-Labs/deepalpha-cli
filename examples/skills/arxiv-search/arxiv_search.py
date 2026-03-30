@@ -27,12 +27,8 @@ def query_arxiv(query: str, max_papers: int = 10) -> str:
 
     try:
         client = arxiv.Client()
-        search = arxiv.Search(
-            query=query, max_results=max_papers, sort_by=arxiv.SortCriterion.Relevance
-        )
-        results = "\n\n".join(
-            [f"Title: {paper.title}\nSummary: {paper.summary}" for paper in client.results(search)]
-        )
+        search = arxiv.Search(query=query, max_results=max_papers, sort_by=arxiv.SortCriterion.Relevance)
+        results = "\n\n".join([f"Title: {paper.title}\nSummary: {paper.summary}" for paper in client.results(search)])
         return results if results else "No papers found on arXiv."
     except Exception as e:
         return f"Error querying arXiv: {e}"

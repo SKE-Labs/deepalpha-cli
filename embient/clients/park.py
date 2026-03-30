@@ -73,12 +73,8 @@ class ParkClient:
                     data = response.json()
                     return data.get("response", [])
                 if response.status_code in (401, 403):
-                    raise AuthenticationError(
-                        "Session expired or invalid. Run 'embient login' to re-authenticate."
-                    )
-                logger.error(
-                    f"Failed to web search: {response.status_code} - {response.text}"
-                )
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
+                logger.error(f"Failed to web search: {response.status_code} - {response.text}")
                 return None
 
         except httpx.TimeoutException:
@@ -133,12 +129,8 @@ class ParkClient:
                     data = response.json()
                     return data.get("response", [])
                 if response.status_code in (401, 403):
-                    raise AuthenticationError(
-                        "Session expired or invalid. Run 'embient login' to re-authenticate."
-                    )
-                logger.error(
-                    f"Failed to get financial news: {response.status_code} - {response.text}"
-                )
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
+                logger.error(f"Failed to get financial news: {response.status_code} - {response.text}")
                 return None
 
         except httpx.TimeoutException:
@@ -178,12 +170,8 @@ class ParkClient:
                     data = response.json()
                     return data.get("response", {})
                 if response.status_code in (401, 403):
-                    raise AuthenticationError(
-                        "Session expired or invalid. Run 'embient login' to re-authenticate."
-                    )
-                logger.error(
-                    f"Failed to get fundamentals: {response.status_code} - {response.text}"
-                )
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
+                logger.error(f"Failed to get fundamentals: {response.status_code} - {response.text}")
                 return None
 
         except httpx.TimeoutException:

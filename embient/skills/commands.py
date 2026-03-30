@@ -213,9 +213,7 @@ def _create(skill_name: str, agent: str, project: bool = False) -> None:
         return
 
     if skill_dir.exists():
-        console.print(
-            f"[bold red]Error:[/bold red] Skill '{skill_name}' already exists at {skill_dir}"
-        )
+        console.print(f"[bold red]Error:[/bold red] Skill '{skill_name}' already exists at {skill_dir}")
         return
 
     # Create skill directory

@@ -120,9 +120,7 @@ async def test_basement_skills_loader_assets_to_store():
             "deepanalysts.backends.basement.basement_client.get_active_skills",
             new_callable=AsyncMock,
         ) as mock_get_skills,
-        patch.object(
-            BasementSkillsLoader, "_download_asset", new_callable=AsyncMock
-        ) as mock_download,
+        patch.object(BasementSkillsLoader, "_download_asset", new_callable=AsyncMock) as mock_download,
     ):
         mock_get_skills.return_value = mock_skills
         mock_download.return_value = "print('hello')"
@@ -191,9 +189,7 @@ async def test_basement_skills_loader_filters_by_agent():
         mock_get_skills.return_value = mock_skills
 
         # Load for technical_analyst
-        skills = await loader.load_skills(
-            agent_name="technical_analyst", user_id=user_id
-        )
+        skills = await loader.load_skills(agent_name="technical_analyst", user_id=user_id)
 
         # Should get shared-skill and ta-only-skill, but NOT other-skill
         skill_names = [s["name"] for s in skills]
@@ -230,9 +226,7 @@ async def test_basement_skills_loader_wildcard_target():
         mock_get_skills.return_value = mock_skills
 
         # Should match any agent due to wildcard
-        skills = await loader.load_skills(
-            agent_name="any_agent", user_id="test-user-123"
-        )
+        skills = await loader.load_skills(agent_name="any_agent", user_id="test-user-123")
 
         assert len(skills) == 1
         assert skills[0]["name"] == "wildcard-skill"

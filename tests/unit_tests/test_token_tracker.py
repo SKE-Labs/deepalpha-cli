@@ -29,9 +29,7 @@ class TestTextualTokenTracker:
     def test_hide_calls_hide_callback(self):
         """Token hide() should call the hide callback."""
         hide_called = []
-        tracker = TextualTokenTracker(
-            lambda _: None, hide_callback=lambda: hide_called.append(True)
-        )
+        tracker = TextualTokenTracker(lambda _: None, hide_callback=lambda: hide_called.append(True))
 
         tracker.hide()
 

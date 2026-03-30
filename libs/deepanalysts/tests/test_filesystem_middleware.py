@@ -73,9 +73,7 @@ class TestReadFileTruncation:
         result = _invoke_read_file(middleware, file_path)
 
         # Result must not exceed the budget
-        assert len(result) <= max_chars, (
-            f"Result length {len(result)} exceeds budget {max_chars}"
-        )
+        assert len(result) <= max_chars, f"Result length {len(result)} exceeds budget {max_chars}"
 
         # Truncation message should be present
         assert "[Output was truncated due to size limits" in result

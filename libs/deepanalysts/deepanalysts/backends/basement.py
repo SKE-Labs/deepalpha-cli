@@ -130,14 +130,10 @@ class BasementSkillsLoader:
         )
 
         # For orchestrator (all skills without specific targeting)
-        orchestrator_skills = await loader.load_skills(
-            user_id="user-123", agent_name="orchestrator"
-        )
+        orchestrator_skills = await loader.load_skills(user_id="user-123", agent_name="orchestrator")
 
         # For technical analyst (only skills targeting technical_analyst)
-        ta_skills = await loader.load_skills(
-            user_id="user-123", agent_name="technical_analyst"
-        )
+        ta_skills = await loader.load_skills(user_id="user-123", agent_name="technical_analyst")
         ```
     """
 
@@ -234,15 +230,17 @@ class BasementSkillsLoader:
                 if not name or not description:
                     continue
 
-                skills.append({
-                    "name": name,
-                    "description": description,
-                    "content": content,
-                    "path": f"/skills/{name}",
-                    "target_agents": [],  # Built-in skills available to all agents
-                    "metadata": frontmatter.get("metadata", {}),
-                    "assets": [],
-                })
+                skills.append(
+                    {
+                        "name": name,
+                        "description": description,
+                        "content": content,
+                        "path": f"/skills/{name}",
+                        "target_agents": [],  # Built-in skills available to all agents
+                        "metadata": frontmatter.get("metadata", {}),
+                        "assets": [],
+                    }
+                )
 
         self._built_in_cache = skills
         logger.debug(f"Loaded {len(skills)} built-in skills from filesystem")
@@ -289,8 +287,7 @@ class BasementSkillsLoader:
         # Write skills to store for read_file access (only on first load per user)
         if self._store and user_id:
             needs_write = any(
-                f"{user_id}:{self._get_store_path(skill)}/SKILL.md"
-                not in self._written_skills
+                f"{user_id}:{self._get_store_path(skill)}/SKILL.md" not in self._written_skills
                 for skill in all_skills
                 if skill.get("path")
             )
@@ -305,9 +302,7 @@ class BasementSkillsLoader:
             if self._skill_matches_agent(skill, agent_name):
                 filtered.append(self._to_skill_metadata(skill))
 
-        logger.debug(
-            f"Filtered {len(filtered)}/{len(all_skills)} skills for agent '{agent_name}'"
-        )
+        logger.debug(f"Filtered {len(filtered)}/{len(all_skills)} skills for agent '{agent_name}'")
         return filtered
 
     async def _write_skills_to_store(self, skills: list[dict[str, Any]], user_id: str) -> None:
@@ -354,9 +349,7 @@ class BasementSkillsLoader:
                         "created_at": file_data["created_at"],
                         "modified_at": file_data["modified_at"],
                     }
-                    put_ops.append(
-                        PutOp(namespace=namespace, key=file_path, value=store_value)
-                    )
+                    put_ops.append(PutOp(namespace=namespace, key=file_path, value=store_value))
                     cache_keys_to_add.append(cache_key)
 
             # Process assets
@@ -377,9 +370,7 @@ class BasementSkillsLoader:
 
                 # Queue text asset downloads for parallel execution
                 if asset_type in ("script", "markdown"):
-                    asset_download_tasks.append(
-                        (full_path, cache_key, storage_path, asset_type)
-                    )
+                    asset_download_tasks.append((full_path, cache_key, storage_path, asset_type))
                 # For images, create reference file immediately (no download needed)
                 elif asset_type == "image" and self._supabase_url:
                     supabase_url = self._supabase_url.rstrip("/")
@@ -420,9 +411,7 @@ class BasementSkillsLoader:
                         "created_at": file_data["created_at"],
                         "modified_at": file_data["modified_at"],
                     }
-                    put_ops.append(
-                        PutOp(namespace=namespace, key=full_path, value=store_value)
-                    )
+                    put_ops.append(PutOp(namespace=namespace, key=full_path, value=store_value))
                     cache_keys_to_add.append(cache_key)
 
         # Execute all writes in a single batch
@@ -430,9 +419,7 @@ class BasementSkillsLoader:
             await self._store.abatch(put_ops)
             # Update cache after successful batch write
             self._written_skills.update(cache_keys_to_add)
-            logger.debug(
-                f"Wrote {len(put_ops)} skill files to store for user {user_id}"
-            )
+            logger.debug(f"Wrote {len(put_ops)} skill files to store for user {user_id}")
 
     async def _download_asset(self, storage_path: str) -> str | None:
         """Download text asset from Supabase storage.

@@ -204,9 +204,7 @@ class ThreadSelectorScreen(ModalScreen[str | None]):
         self._option_widgets = []
 
         if not self._threads:
-            await scroll.mount(
-                Static("[dim]No threads found[/dim]", classes="thread-empty")
-            )
+            await scroll.mount(Static("[dim]No threads found[/dim]", classes="thread-empty"))
             return
 
         selected_widget: ThreadOption | None = None
@@ -221,9 +219,7 @@ class ThreadSelectorScreen(ModalScreen[str | None]):
             if is_current:
                 classes += " thread-option-current"
 
-            label = self._format_option_label(
-                thread, selected=is_selected, current=is_current
-            )
+            label = self._format_option_label(thread, selected=is_selected, current=is_current)
             widget = ThreadOption(
                 label=label,
                 thread_id=thread["thread_id"],
@@ -245,10 +241,7 @@ class ThreadSelectorScreen(ModalScreen[str | None]):
 
     @staticmethod
     def _format_header() -> str:
-        return (
-            f"  {'Thread':<{_COL_TID}}  {'Agent':<{_COL_AGENT}}"
-            f"  Updated"
-        )
+        return f"  {'Thread':<{_COL_TID}}  {'Agent':<{_COL_AGENT}}  Updated"
 
     @staticmethod
     def _format_option_label(
@@ -262,10 +255,7 @@ class ThreadSelectorScreen(ModalScreen[str | None]):
         agent = (thread.get("agent_name") or "unknown")[:_COL_AGENT]
         timestamp = _format_timestamp(thread.get("updated_at"))
 
-        label = (
-            f"{cursor}{tid:<{_COL_TID}}  {agent:<{_COL_AGENT}}"
-            f"  {timestamp}"
-        )
+        label = f"{cursor}{tid:<{_COL_TID}}  {agent:<{_COL_AGENT}}  {timestamp}"
         if current:
             label += " [dim](current)[/dim]"
         return label

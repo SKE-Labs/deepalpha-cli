@@ -230,9 +230,7 @@ except PermissionError:
 
     def read(self, file_path: str, offset: int = 0, limit: int = 2000) -> str:
         """Read file content with line numbers."""
-        cmd = _READ_COMMAND_TEMPLATE.format(
-            file_path=file_path, offset=offset, limit=limit
-        )
+        cmd = _READ_COMMAND_TEMPLATE.format(file_path=file_path, offset=offset, limit=limit)
         result = self.execute(cmd)
 
         output = result.output.rstrip()
@@ -324,9 +322,7 @@ except PermissionError:
         for line in output.split("\n"):
             parts = line.split(":", 2)
             if len(parts) >= 3:
-                matches.append(
-                    {"path": parts[0], "line": int(parts[1]), "text": parts[2]}
-                )
+                matches.append({"path": parts[0], "line": int(parts[1]), "text": parts[2]})
 
         return matches
 
@@ -483,23 +479,13 @@ class RestrictedSubprocessBackend(BaseSandbox):
             try:
                 file_path = self._temp_dir / path.lstrip("/")
                 if not file_path.exists():
-                    responses.append(
-                        FileDownloadResponse(
-                            path=path, content=None, error="file_not_found"
-                        )
-                    )
+                    responses.append(FileDownloadResponse(path=path, content=None, error="file_not_found"))
                     continue
 
                 content = file_path.read_bytes()
-                responses.append(
-                    FileDownloadResponse(path=path, content=content, error=None)
-                )
+                responses.append(FileDownloadResponse(path=path, content=content, error=None))
             except Exception:
-                responses.append(
-                    FileDownloadResponse(
-                        path=path, content=None, error="permission_denied"
-                    )
-                )
+                responses.append(FileDownloadResponse(path=path, content=None, error="permission_denied"))
 
         return responses
 

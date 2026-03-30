@@ -17,9 +17,7 @@ class EconomicsCalendarSchema(BaseModel):
     from_date: str = Field(description="Start date (YYYY-MM-DD)")
     to_date: str = Field(description="End date (YYYY-MM-DD)")
     country: str = Field(default="", description="Country filter (e.g., US, JP), or empty for all")
-    impact: str = Field(
-        default="", description="Impact level filter: 'High', 'Medium', 'Low', or empty for all"
-    )
+    impact: str = Field(default="", description="Impact level filter: 'High', 'Medium', 'Low', or empty for all")
     event: str = Field(default="", description="Event name keyword filter, or empty for all")
 
 

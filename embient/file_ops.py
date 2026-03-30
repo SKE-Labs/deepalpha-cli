@@ -163,11 +163,7 @@ def build_approval_preview(
         diff = compute_unified_diff(before or "", after, display_path, max_lines=100)
         additions = 0
         if diff:
-            additions = sum(
-                1
-                for line in diff.splitlines()
-                if line.startswith("+") and not line.startswith("+++")
-            )
+            additions = sum(1 for line in diff.splitlines() if line.startswith("+") and not line.startswith("+++"))
         total_lines = _count_lines(after)
         details = [
             f"File: {path_str}",
@@ -210,16 +206,8 @@ def build_approval_preview(
         additions = 0
         deletions = 0
         if diff:
-            additions = sum(
-                1
-                for line in diff.splitlines()
-                if line.startswith("+") and not line.startswith("+++")
-            )
-            deletions = sum(
-                1
-                for line in diff.splitlines()
-                if line.startswith("-") and not line.startswith("---")
-            )
+            additions = sum(1 for line in diff.splitlines() if line.startswith("+") and not line.startswith("+++"))
+            deletions = sum(1 for line in diff.splitlines() if line.startswith("-") and not line.startswith("---"))
         details = [
             f"File: {path_str}",
             f"Action: Replace text ({'all occurrences' if replace_all else 'single occurrence'})",
@@ -246,9 +234,7 @@ class FileOpTracker:
         self.active: dict[str | None, FileOperationRecord] = {}
         self.completed: list[FileOperationRecord] = []
 
-    def start_operation(
-        self, tool_name: str, args: dict[str, Any], tool_call_id: str | None
-    ) -> None:
+    def start_operation(self, tool_name: str, args: dict[str, Any], tool_call_id: str | None) -> None:
         if tool_name not in {"read_file", "write_file", "edit_file"}:
             return
         path_str = str(args.get("file_path") or args.get("path") or "")
@@ -264,11 +250,7 @@ class FileOpTracker:
             if self.backend and path_str:
                 try:
                     responses = self.backend.download_files([path_str])
-                    if (
-                        responses
-                        and responses[0].content is not None
-                        and responses[0].error is None
-                    ):
+                    if responses and responses[0].content is not None and responses[0].error is None:
                         record.before_content = responses[0].content.decode("utf-8")
                     else:
                         record.before_content = ""
@@ -295,11 +277,7 @@ class FileOpTracker:
                 if self.backend:
                     try:
                         responses = self.backend.download_files([path_str])
-                        if (
-                            responses
-                            and responses[0].content is not None
-                            and responses[0].error is None
-                        ):
+                        if responses and responses[0].content is not None and responses[0].error is None:
                             record.before_content = responses[0].content.decode("utf-8")
                         else:
                             record.before_content = ""
@@ -327,9 +305,7 @@ class FileOpTracker:
         else:
             content_text = str(content) if content is not None else ""
 
-        if getattr(
-            tool_message, "status", "success"
-        ) != "success" or content_text.lower().startswith("error"):
+        if getattr(tool_message, "status", "success") != "success" or content_text.lower().startswith("error"):
             record.status = "error"
             record.error = content_text
             self._finalize(record)
@@ -372,16 +348,8 @@ class FileOpTracker:
             )
             record.diff = diff
             if diff:
-                additions = sum(
-                    1
-                    for line in diff.splitlines()
-                    if line.startswith("+") and not line.startswith("+++")
-                )
-                deletions = sum(
-                    1
-                    for line in diff.splitlines()
-                    if line.startswith("-") and not line.startswith("---")
-                )
+                additions = sum(1 for line in diff.splitlines() if line.startswith("+") and not line.startswith("+++"))
+                deletions = sum(1 for line in diff.splitlines() if line.startswith("-") and not line.startswith("---"))
                 record.metrics.lines_added = additions
                 record.metrics.lines_removed = deletions
             elif record.tool_name == "write_file" and (record.before_content or "") == "":
@@ -420,11 +388,7 @@ class FileOpTracker:
                 file_path = record.args.get("file_path") or record.args.get("path")
                 if file_path:
                     responses = self.backend.download_files([file_path])
-                    if (
-                        responses
-                        and responses[0].content is not None
-                        and responses[0].error is None
-                    ):
+                    if responses and responses[0].content is not None and responses[0].error is None:
                         record.after_content = responses[0].content.decode("utf-8")
                     else:
                         record.after_content = None

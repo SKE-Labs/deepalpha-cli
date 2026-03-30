@@ -47,9 +47,7 @@ def make_conversation_messages(
                 AIMessage(
                     content=f"AI response {i}",
                     id=f"ai-{i}",
-                    tool_calls=[
-                        {"id": f"tool-call-{i}", "name": "test_tool", "args": {}}
-                    ],
+                    tool_calls=[{"id": f"tool-call-{i}", "name": "test_tool", "args": {}}],
                 )
             )
         else:
@@ -63,9 +61,7 @@ def make_conversation_messages(
 
     for i in range(num_recent):
         idx = num_old + i
-        messages.append(
-            HumanMessage(content=f"Recent message {idx}", id=f"recent-{idx}")
-        )
+        messages.append(HumanMessage(content=f"Recent message {idx}", id=f"recent-{idx}"))
 
     return messages
 
@@ -129,17 +125,13 @@ class MockBackend(BackendProtocol):
     async def awrite(self, path: str, content: str) -> WriteResult:
         return self.write(path, content)
 
-    def edit(
-        self, path: str, old_string: str, new_string: str, replace_all: bool = False
-    ) -> EditResult:
+    def edit(self, path: str, old_string: str, new_string: str, replace_all: bool = False) -> EditResult:
         self.edit_calls.append((path, old_string, new_string))
         if self.should_fail:
             return EditResult(error=self.error_message or "Mock edit failure")
         return EditResult(path=path, occurrences=1)
 
-    async def aedit(
-        self, path: str, old_string: str, new_string: str, replace_all: bool = False
-    ) -> EditResult:
+    async def aedit(self, path: str, old_string: str, new_string: str, replace_all: bool = False) -> EditResult:
         return self.edit(path, old_string, new_string, replace_all)
 
 
@@ -255,7 +247,8 @@ class TestOffloadingBasic:
         assert result is not None
         # Summary message should not include file path (since offload failed)
         summary_msgs = [
-            m for m in result["messages"]
+            m
+            for m in result["messages"]
             if hasattr(m, "additional_kwargs") and m.additional_kwargs.get("lc_source") == "summarization"
         ]
         assert len(summary_msgs) == 1

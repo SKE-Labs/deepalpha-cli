@@ -188,9 +188,7 @@ async def _run_agent_loop(
 ) -> None:
     """Run the agent and handle HITL interrupts until the task completes."""
     state = StreamState(quiet=quiet)
-    stream_input: dict[str, Any] | Command = {
-        "messages": [{"role": "user", "content": message}]
-    }
+    stream_input: dict[str, Any] | Command = {"messages": [{"role": "user", "content": message}]}
 
     await _stream_agent(agent, stream_input, config, state, console)
 

@@ -4,7 +4,6 @@ Tests the sandbox backend's execute() method with timeout handling,
 math calculations, and error capture.
 """
 
-
 from deepanalysts.backends.sandbox import RestrictedSubprocessBackend
 
 
@@ -41,9 +40,7 @@ class TestRestrictedSubprocessBackend:
     def test_execute_captures_stderr(self):
         """Test stderr is captured in output."""
         backend = RestrictedSubprocessBackend()
-        result = backend.execute(
-            "python3 -c \"import sys; print('error', file=sys.stderr)\""
-        )
+        result = backend.execute("python3 -c \"import sys; print('error', file=sys.stderr)\"")
         assert "error" in result.output
 
     def test_execute_fibonacci_calculation(self):

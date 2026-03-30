@@ -182,9 +182,7 @@ def _parse_skill_metadata(
         SkillMetadata if parsing succeeds, None if parsing fails or validation errors occur
     """
     if len(content) > MAX_SKILL_FILE_SIZE:
-        logger.warning(
-            "Skipping %s: content too large (%d bytes)", skill_path, len(content)
-        )
+        logger.warning("Skipping %s: content too large (%d bytes)", skill_path, len(content))
         return None
 
     # Match YAML frontmatter between --- delimiters
@@ -213,9 +211,7 @@ def _parse_skill_metadata(
     description = frontmatter_data.get("description")
 
     if not name or not description:
-        logger.warning(
-            "Skipping %s: missing required 'name' or 'description'", skill_path
-        )
+        logger.warning("Skipping %s: missing required 'name' or 'description'", skill_path)
         return None
 
     # Validate name format per spec (warn but continue loading for backwards compatibility)
@@ -299,9 +295,7 @@ def _list_skills(backend: BackendProtocol, source_path: str) -> list[SkillMetada
     responses = backend.download_files(paths_to_download)
 
     # Parse each downloaded SKILL.md
-    for (skill_dir_path, skill_md_path), response in zip(
-        skill_md_paths, responses, strict=True
-    ):
+    for (skill_dir_path, skill_md_path), response in zip(skill_md_paths, responses, strict=True):
         if response.error:
             # Skill doesn't have a SKILL.md, skip it
             continue
@@ -331,9 +325,7 @@ def _list_skills(backend: BackendProtocol, source_path: str) -> list[SkillMetada
     return skills
 
 
-async def _alist_skills(
-    backend: BackendProtocol, source_path: str
-) -> list[SkillMetadata]:
+async def _alist_skills(backend: BackendProtocol, source_path: str) -> list[SkillMetadata]:
     """List all skills from a backend source (async version).
 
     Scans backend for subdirectories containing SKILL.md files, downloads their content,
@@ -378,9 +370,7 @@ async def _alist_skills(
     responses = await backend.adownload_files(paths_to_download)
 
     # Parse each downloaded SKILL.md
-    for (skill_dir_path, skill_md_path), response in zip(
-        skill_md_paths, responses, strict=True
-    ):
+    for (skill_dir_path, skill_md_path), response in zip(skill_md_paths, responses, strict=True):
         if response.error:
             # Skill doesn't have a SKILL.md, skip it
             continue
@@ -479,9 +469,7 @@ class SkillsMiddleware(AgentMiddleware):
         self.agent_name = agent_name
         self.system_prompt_template = SKILLS_SYSTEM_PROMPT
 
-    def _get_backend(
-        self, state: SkillsState, runtime: Runtime, config: RunnableConfig
-    ) -> BackendProtocol:
+    def _get_backend(self, state: SkillsState, runtime: Runtime, config: RunnableConfig) -> BackendProtocol:
         """Resolve backend from instance or factory.
 
         Args:
@@ -504,9 +492,7 @@ class SkillsMiddleware(AgentMiddleware):
             )
             backend = self._backend(tool_runtime)
             if backend is None:
-                raise AssertionError(
-                    "SkillsMiddleware requires a valid backend instance"
-                )
+                raise AssertionError("SkillsMiddleware requires a valid backend instance")
             return backend
 
         return self._backend
@@ -560,14 +546,10 @@ class SkillsMiddleware(AgentMiddleware):
             skills_list=skills_list,
         )
 
-        system_message = append_to_system_message(
-            request.system_message, skills_section
-        )
+        system_message = append_to_system_message(request.system_message, skills_section)
         return request.override(system_message=system_message)
 
-    def before_agent(
-        self, state: SkillsState, runtime: Runtime, config: RunnableConfig
-    ) -> SkillsStateUpdate | None:
+    def before_agent(self, state: SkillsState, runtime: Runtime, config: RunnableConfig) -> SkillsStateUpdate | None:
         """Load skills metadata before agent execution (synchronous).
 
         Runs before each agent interaction to discover available skills from all
@@ -634,14 +616,9 @@ class SkillsMiddleware(AgentMiddleware):
         if self.loader:
             # Get user_id for store namespace (multi-tenant isolation)
             user_id = config.get("configurable", {}).get("user_id")
-            skills_metadata = await self.loader.load_skills(
-                agent_name=self.agent_name, user_id=user_id
-            )
+            skills_metadata = await self.loader.load_skills(agent_name=self.agent_name, user_id=user_id)
             if skills_metadata:
-                logger.debug(
-                    f"Loaded {len(skills_metadata)} skills from API "
-                    f"for agent '{self.agent_name}'"
-                )
+                logger.debug(f"Loaded {len(skills_metadata)} skills from API for agent '{self.agent_name}'")
 
         # Also load from backend/sources (for built-in skills and file-based skills)
         if self._backend and self.sources:

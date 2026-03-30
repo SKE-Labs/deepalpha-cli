@@ -43,11 +43,7 @@ class PatchToolCallsMiddleware(AgentMiddleware):
             if msg.type == "ai" and msg.tool_calls:
                 for tool_call in msg.tool_calls:
                     corresponding_tool_msg = next(
-                        (
-                            m
-                            for m in messages[i:]
-                            if m.type == "tool" and m.tool_call_id == tool_call["id"]
-                        ),
+                        (m for m in messages[i:] if m.type == "tool" and m.tool_call_id == tool_call["id"]),
                         None,
                     )
                     if corresponding_tool_msg is None:

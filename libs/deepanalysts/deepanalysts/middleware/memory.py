@@ -152,9 +152,7 @@ class MemoryMiddleware(AgentMiddleware):
         self.loader = loader
         self.system_prompt_template = MEMORY_SYSTEM_PROMPT
 
-    def _get_backend(
-        self, state: MemoryState, runtime: Runtime, config: RunnableConfig
-    ) -> BackendProtocol:
+    def _get_backend(self, state: MemoryState, runtime: Runtime, config: RunnableConfig) -> BackendProtocol:
         """Resolve backend from instance or factory.
 
         Args:
@@ -246,9 +244,7 @@ class MemoryMiddleware(AgentMiddleware):
         results = await backend.adownload_files([path])
         # Should get exactly one response for one path
         if len(results) != 1:
-            raise AssertionError(
-                f"Expected 1 response for path {path}, got {len(results)}"
-            )
+            raise AssertionError(f"Expected 1 response for path {path}, got {len(results)}")
         response = results[0]
 
         if response.error is not None:
@@ -276,9 +272,7 @@ class MemoryMiddleware(AgentMiddleware):
         results = backend.download_files([path])
         # Should get exactly one response for one path
         if len(results) != 1:
-            raise AssertionError(
-                f"Expected 1 response for path {path}, got {len(results)}"
-            )
+            raise AssertionError(f"Expected 1 response for path {path}, got {len(results)}")
         response = results[0]
 
         if response.error is not None:
@@ -289,9 +283,7 @@ class MemoryMiddleware(AgentMiddleware):
 
         return None
 
-    def before_agent(
-        self, state: MemoryState, runtime: Runtime, config: RunnableConfig
-    ) -> MemoryStateUpdate | None:
+    def before_agent(self, state: MemoryState, runtime: Runtime, config: RunnableConfig) -> MemoryStateUpdate | None:
         """Load memory content before agent execution (synchronous).
 
         Loads memory from all configured sources and stores in state.
@@ -384,9 +376,7 @@ class MemoryMiddleware(AgentMiddleware):
             memory_contents=memory_contents,
         )
 
-        system_message = append_to_system_message(
-            request.system_message, memory_section
-        )
+        system_message = append_to_system_message(request.system_message, memory_section)
         return request.override(system_message=system_message)
 
     def wrap_model_call(

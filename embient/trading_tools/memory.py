@@ -57,8 +57,7 @@ class CreateMemorySchema(BaseModel):
         "Examples: 'Trading Style', 'Risk Management', 'BTC Strategy'"
     )
     content: str = Field(
-        description="The memory content. Write concise, actionable rules using "
-        "the user's own words. Max 50KB."
+        description="The memory content. Write concise, actionable rules using the user's own words. Max 50KB."
     )
     description: str | None = Field(
         default=None,
@@ -106,24 +105,15 @@ async def create_memory(
     )
 
     if result is None:
-        raise ToolException(
-            "Failed to create memory. The name may already exist or limits may be exceeded."
-        )
+        raise ToolException("Failed to create memory. The name may already exist or limits may be exceeded.")
 
-    return (
-        f"Memory created successfully!\n"
-        f"ID: {result.get('id')}\n"
-        f"Name: {name}\n"
-        f"Content: {content}"
-    )
+    return f"Memory created successfully!\nID: {result.get('id')}\nName: {name}\nContent: {content}"
 
 
 class UpdateMemorySchema(BaseModel):
     """Arguments for update_memory tool."""
 
-    memory_id: str = Field(
-        description="The memory ID to update (from `list_memories` output)"
-    )
+    memory_id: str = Field(description="The memory ID to update (from `list_memories` output)")
     content: str | None = Field(
         default=None,
         description="New content to replace existing content. Max 50KB.",
@@ -180,9 +170,7 @@ async def update_memory(
     )
 
     if result is None:
-        raise ToolException(
-            f"Failed to update memory ID {memory_id}. It may not exist or the name may conflict."
-        )
+        raise ToolException(f"Failed to update memory ID {memory_id}. It may not exist or the name may conflict.")
 
     updates = []
     if name:
@@ -198,9 +186,7 @@ async def update_memory(
 class DeleteMemorySchema(BaseModel):
     """Arguments for delete_memory tool."""
 
-    memory_id: str = Field(
-        description="The memory ID to delete (from `list_memories` output)"
-    )
+    memory_id: str = Field(description="The memory ID to delete (from `list_memories` output)")
 
 
 @tool(args_schema=DeleteMemorySchema)
@@ -232,8 +218,6 @@ async def delete_memory(memory_id: str) -> str:
     success = await basement_client.delete_memory(token=token, memory_id=memory_id)
 
     if not success:
-        raise ToolException(
-            f"Failed to delete memory ID {memory_id}. It may not exist."
-        )
+        raise ToolException(f"Failed to delete memory ID {memory_id}. It may not exist.")
 
     return f"Memory ID {memory_id} deleted successfully."

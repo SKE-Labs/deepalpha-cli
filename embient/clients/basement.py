@@ -207,9 +207,7 @@ class BasementClient:
                     logger.info(f"Created trading signal for {symbol}")
                     return data.get("response")
                 if response.status_code == 401:
-                    raise AuthenticationError(
-                        "Session expired or invalid. Run 'embient login' to re-authenticate."
-                    )
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
                 if response.status_code == 403:
                     # 403 may be a monitoring quota error, not an auth error
                     data = response.json()
@@ -951,6 +949,122 @@ class BasementClient:
             logger.error(f"Error fetching skills: {e}")
             return []
 
+    # =========================================================================
+    # Position Management
+    # =========================================================================
+
+    async def close_trading_signal(
+        self,
+        token: str,
+        signal_id: int,
+        exit_price: float,
+        reflection: str | None = None,
+    ) -> dict | None:
+        """Close a trading position via the dedicated close endpoint.
+
+        This endpoint handles capital release, P&L calculation, balance updates,
+        and monitoring cleanup — unlike the generic PATCH update.
+
+        Args:
+            token: JWT authentication token
+            signal_id: The trading signal ID to close
+            exit_price: The exit price for the position
+            reflection: Optional post-trade reflection notes
+
+        Returns:
+            Closed trading signal dictionary or None on failure
+        """
+        try:
+            payload: dict = {"exit_price": exit_price}
+            if reflection is not None:
+                payload["reflection"] = reflection
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    f"{self.base_url}/api/v1/trading-signals/{signal_id}/close",
+                    json=payload,
+                    headers=self._headers(token),
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    logger.info(f"Closed trading signal ID {signal_id}")
+                    return data.get("response")
+                if response.status_code in (401, 403):
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
+                logger.error(f"Failed to close signal: {response.status_code} - {response.text}")
+                return None
+
+        except httpx.TimeoutException:
+            logger.error("Timeout while closing trading signal")
+            return None
+        except AuthenticationError:
+            raise
+        except Exception as e:
+            logger.error(f"Error closing trading signal: {e}")
+            return None
+
+    # =========================================================================
+    # Notifications
+    # =========================================================================
+
+    async def send_notification(
+        self,
+        token: str,
+        title: str,
+        body: str,
+        priority: int = 5,
+        category: str = "system",
+        data: dict | None = None,
+    ) -> dict | None:
+        """Enqueue a notification for the authenticated user.
+
+        Args:
+            token: JWT authentication token
+            title: Notification title
+            body: Notification body
+            priority: Priority level 1-10
+            category: Notification category
+            data: Optional additional data
+
+        Returns:
+            Created notification dict or None on failure
+        """
+        try:
+            payload: dict = {
+                "title": title,
+                "body": body,
+                "priority": priority,
+                "category": category,
+                "notification_type": "both",
+            }
+            if data:
+                payload["data"] = data
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    f"{self.base_url}/api/v1/notifications/enqueue",
+                    json=payload,
+                    headers=self._headers(token),
+                )
+
+                if response.status_code in (200, 201):
+                    data_resp = response.json()
+                    logger.info(f"Notification enqueued: {title}")
+                    return data_resp.get("response")
+                if response.status_code in (401, 403):
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
+                logger.error(f"Failed to enqueue notification: {response.status_code} - {response.text}")
+                return None
+
+        except httpx.TimeoutException:
+            logger.error("Timeout while enqueuing notification")
+            return None
+        except AuthenticationError:
+            raise
+        except Exception as e:
+            logger.error(f"Error enqueuing notification: {e}")
+            return None
 
     # =========================================================================
     # Subscription / Monitoring Quota
@@ -976,12 +1090,8 @@ class BasementClient:
                     data = response.json()
                     return data.get("response", {})
                 if response.status_code in (401, 403):
-                    raise AuthenticationError(
-                        "Session expired or invalid. Run 'embient login' to re-authenticate."
-                    )
-                logger.error(
-                    f"Failed to check monitoring quota: {response.status_code} - {response.text}"
-                )
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
+                logger.error(f"Failed to check monitoring quota: {response.status_code} - {response.text}")
                 return None
 
         except httpx.TimeoutException:
@@ -993,9 +1103,7 @@ class BasementClient:
             logger.error(f"Error checking monitoring quota: {e}")
             return None
 
-    async def validate_monitoring_interval(
-        self, token: str, interval_minutes: int
-    ) -> dict | None:
+    async def validate_monitoring_interval(self, token: str, interval_minutes: int) -> dict | None:
         """Validate a monitoring interval against the user's subscription tier.
 
         Args:
@@ -1023,12 +1131,8 @@ class BasementClient:
                         "max": max_interval,
                     }
                 if response.status_code in (401, 403):
-                    raise AuthenticationError(
-                        "Session expired or invalid. Run 'embient login' to re-authenticate."
-                    )
-                logger.error(
-                    f"Failed to validate monitoring interval: {response.status_code} - {response.text}"
-                )
+                    raise AuthenticationError("Session expired or invalid. Run 'embient login' to re-authenticate.")
+                logger.error(f"Failed to validate monitoring interval: {response.status_code} - {response.text}")
                 return None
 
         except httpx.TimeoutException:

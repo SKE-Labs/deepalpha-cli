@@ -82,8 +82,7 @@ async def get_indicator(
             raise ToolException("Authentication failed. Run 'embient login' to re-authenticate.") from e
         elif "404" in error_msg:
             raise ToolException(
-                f"No {indicator} data found for {symbol} on {exchange}. "
-                f"The indicator may not be calculated yet."
+                f"No {indicator} data found for {symbol} on {exchange}. The indicator may not be calculated yet."
             ) from e
         elif "timeout" in error_msg.lower():
             raise ToolException(f"Request timeout while fetching {indicator} for {symbol}.") from e

@@ -87,16 +87,14 @@ def format_diff_textual(diff: str, max_lines: int | None = 100) -> str:
         if line.startswith("-"):
             # Deletion - red gutter bar, subtle red background
             formatted.append(
-                f"[red bold]▌[/red bold][dim]{old_num:>{width}}[/dim] "
-                f"[on #2d1515]{escaped_content}[/on #2d1515]"
+                f"[red bold]▌[/red bold][dim]{old_num:>{width}}[/dim] [on #2d1515]{escaped_content}[/on #2d1515]"
             )
             old_num += 1
             line_count += 1
         elif line.startswith("+"):
             # Addition - green gutter bar, subtle green background
             formatted.append(
-                f"[green bold]▌[/green bold][dim]{new_num:>{width}}[/dim] "
-                f"[on #152d15]{escaped_content}[/on #152d15]"
+                f"[green bold]▌[/green bold][dim]{new_num:>{width}}[/dim] [on #152d15]{escaped_content}[/on #152d15]"
             )
             new_num += 1
             line_count += 1

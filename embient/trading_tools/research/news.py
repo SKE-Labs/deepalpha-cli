@@ -15,16 +15,10 @@ class FinancialNewsSchema(BaseModel):
     """Arguments for get_financial_news tool."""
 
     topic: str = Field(description="News search topic (ticker, company name, or financial event)")
-    time_range: str = Field(
-        default="", description="Time filter for recency: 'day', 'week', 'month', or empty for all"
-    )
+    time_range: str = Field(default="", description="Time filter for recency: 'day', 'week', 'month', or empty for all")
     max_results: int = Field(default=10, description="Maximum number of results")
-    use_trusted_sources: bool = Field(
-        default=True, description="Restrict to trusted financial sources"
-    )
-    fetch_content: bool = Field(
-        default=False, description="Fetch full article content (slower)"
-    )
+    use_trusted_sources: bool = Field(default=True, description="Restrict to trusted financial sources")
+    fetch_content: bool = Field(default=False, description="Fetch full article content (slower)")
 
 
 @tool(args_schema=FinancialNewsSchema)
