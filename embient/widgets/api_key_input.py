@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from textual.binding import Binding, BindingType
 from textual.containers import Vertical
+from textual.events import Key
 from textual.screen import ModalScreen
 from textual.widgets import Input, Static
 
@@ -98,6 +99,11 @@ class ApiKeyInputScreen(ModalScreen[str | None]):
 
     def on_mount(self) -> None:
         self.query_one("#api-key-input", Input).focus()
+
+    def on_key(self, event: Key) -> None:
+        if event.key == "escape":
+            event.prevent_default()
+            self.action_cancel()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         event.stop()

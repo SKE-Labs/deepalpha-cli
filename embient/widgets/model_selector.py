@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from textual.binding import Binding, BindingType
 from textual.containers import Container, Vertical, VerticalScroll
-from textual.events import (
-    Click,
-)
+from textual.events import Click, Key
 from textual.message import Message
 from textual.screen import ModalScreen
 from textual.widgets import Input, Static
@@ -218,6 +216,11 @@ class ModelSelectorScreen(ModalScreen[tuple[str, str] | None]):
         await self._update_display()
         filter_input = self.query_one("#model-filter", Input)
         filter_input.focus()
+
+    def on_key(self, event: Key) -> None:
+        if event.key == "escape":
+            event.prevent_default()
+            self.action_cancel()
 
     def on_input_changed(self, event: Input.Changed) -> None:
         self._filter_text = event.value.lower()
