@@ -28,84 +28,43 @@ from langgraph.types import Checkpointer
 
 from embient.trading_tools import (
     calculate_position_size,
+    cancel_signal,
+    close_position,
     create_memory,
     create_trading_insight,
     delete_memory,
     get_latest_candle,
+    get_portfolio_summary,
     get_user_trading_insights,
+    get_user_watchlist,
     list_memories,
+    send_notification,
     update_memory,
     update_trading_insight,
 )
+from embient.trading_tools.spawns import (
+    cancel_spawn,
+    create_spawn,
+    get_spawn_runs,
+    list_spawns,
+    update_spawn,
+)
+from embient.utils.prompt_loader import load_prompt
 
-SUPERVISOR_PROMPT = """# Embient AI Trading Analyst
-
-You orchestrate specialized analysts to answer trading questions. Handle quick queries directly and delegate deep analysis to experts.
-
-NEVER:
-- Delegate signal creation, position sizing, or signal updates to analysts — handle these yourself
-- Invent price levels or position sizes — always get data from tools or analyst findings
-
-## When to Act Directly vs Delegate
-
-**Handle directly** (no delegation needed):
-- Quick price checks → `get_latest_candle`
-- Viewing signals → `get_user_trading_insights`
-- Updating signals → `update_trading_insight` (HITL approval)
-- Signal creation → `calculate_position_size` → `create_trading_insight` (HITL approval)
-
-**Delegate to specialists**:
-- **technical_analyst** — Multi-timeframe chart analysis (macro, swing, scalp). Analyzes 1d (macro), 1h (swing), and 15m (scalp) in a single comprehensive analysis.
-- **fundamental_analyst** — Deep research combining news, sentiment, and market events.
-
-## Workflow Rules
-
-- **Full analysis** → technical_analyst (all timeframes) → respond
-- **Signal creation** → technical_analyst → `get_latest_candle` → `calculate_position_size` → `create_trading_insight` → respond
-- **Signal update** → `update_trading_insight` directly
-- **News/fundamentals** → fundamental_analyst
-
-## Signal Creation
-
-After analyst returns findings:
-1. `get_latest_candle` → suggestion_price
-2. `calculate_position_size` → quantity, leverage, capital_allocated
-3. `create_trading_insight` → uses analysis context (entry, SL, TP, rationale, invalid_condition, confidence)
-
-Use exact price levels from analyst findings. See `create_trading_insight` tool docs for field quality standards.
-
-**confidence_score** — Use the confidence score from the technical analyst based on timeframe confluence.
-
-## Professional Objectivity
-
-Prioritize accuracy over validating the user's expectations. If the chart contradicts their thesis, say so directly. If signals are mixed or confidence is low, be clear about it. Objective guidance is more valuable than false agreement.
-
-## Response Style
-
-Keep responses concise:
-- **Summary**: 1-2 sentences on what you found
-- **Key Findings**: 3-5 bullets with the most important insights
-- **Action**: Next steps if applicable
-
-Use markdown formatting. End trading recommendations with:
-> **Disclaimer**: Educational purposes only. Not financial advice. DYOR.
-
-## Error Recovery
-
-When a tool call fails:
-- Do NOT retry the same tool — if it failed once, it will fail again
-- Report the failure clearly to the user
-- Use alternative approaches or available data to continue
-- If a subagent's task fails, summarize what was attempted and what went wrong
-"""
+SUPERVISOR_PROMPT = load_prompt("analysts/supervisor.md")
 
 # Signal tools for orchestrator (handles signal management directly)
 _SIGNAL_TOOLS = [
     get_latest_candle,
     get_user_trading_insights,
+    get_portfolio_summary,
+    get_user_watchlist,
     calculate_position_size,
     create_trading_insight,
     update_trading_insight,
+    close_position,
+    cancel_signal,
+    send_notification,
 ]
 
 # Memory tools for orchestrator (manages user memories directly)
@@ -114,6 +73,15 @@ _MEMORY_TOOLS = [
     create_memory,
     update_memory,
     delete_memory,
+]
+
+# Spawn tools for orchestrator (manages autonomous background agents)
+_SPAWN_TOOLS = [
+    create_spawn,
+    list_spawns,
+    update_spawn,
+    cancel_spawn,
+    get_spawn_runs,
 ]
 
 
@@ -259,7 +227,7 @@ def create_deep_analysts(
                 subagents=subagents,
             ),
             PatchToolCallsMiddleware(),  # Handle dangling tool calls from interruptions
-            # HITL for signal creation/updates (orchestrator handles these directly)
+            # HITL for signal management (orchestrator handles these directly)
             HumanInTheLoopMiddleware(
                 interrupt_on={
                     "create_trading_insight": {
@@ -268,13 +236,22 @@ def create_deep_analysts(
                     "update_trading_insight": {
                         "allowed_decisions": ["approve", "reject"],
                     },
+                    "close_position": {
+                        "allowed_decisions": ["approve", "reject"],
+                    },
+                    "cancel_signal": {
+                        "allowed_decisions": ["approve", "reject"],
+                    },
+                    "create_spawn": {
+                        "allowed_decisions": ["approve", "reject"],
+                    },
                 }
             ),
         ]
     )
 
-    # Combine signal tools, memory tools, and any additional tools passed in
-    all_tools = list(_SIGNAL_TOOLS) + list(_MEMORY_TOOLS) + list(tools or [])
+    # Combine signal tools, memory tools, spawn tools, and any additional tools passed in
+    all_tools = list(_SIGNAL_TOOLS) + list(_MEMORY_TOOLS) + list(_SPAWN_TOOLS) + list(tools or [])
 
     return create_agent(
         model,

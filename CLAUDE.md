@@ -79,7 +79,7 @@ Defaults: `gpt-5-mini` (OpenAI), `claude-sonnet-4-5-20250929` (Anthropic), `gemi
 
 ### HITL
 
-Signal creation/update requires user approval via `ApprovalMenu` widget. Use `--auto-approve` to skip.
+Signal creation/update/close/cancel and spawn creation require user approval via `ApprovalMenu` widget. Use `--auto-approve` to skip.
 
 ## Tools
 
@@ -95,16 +95,40 @@ Signal creation/update requires user approval via `ApprovalMenu` widget. Use `--
 | `get_financial_news` | Park | Trusted source news |
 | `get_fundamentals` | Park (TwelveData) | Stock fundamentals |
 | `get_economics_calendar` | Basement | Economic events |
+| `get_user_watchlist` | Basement | User's favorite tickers |
 | `get_user_trading_insights` | Basement | List signals |
 | `create_trading_insight` | Basement | Create signal (HITL) |
 | `update_trading_insight` | Basement | Update signal (HITL) |
+| `close_position` | Basement | Close executed position (HITL) |
+| `cancel_signal` | Basement | Cancel unexecuted signal (HITL) |
+| `get_portfolio_summary` | Basement | Account balance, positions, P&L |
 | `calculate_position_size` | Local | Risk-based sizing |
+| `send_notification` | Basement | Push/email notification |
 | `list_memories` | Basement | List memories |
 | `create_memory` | Basement | Create memory |
 | `update_memory` | Basement | Update memory |
 | `delete_memory` | Basement | Delete memory |
+| `create_spawn` | Local | Create autonomous spawn (HITL) |
+| `list_spawns` | Local | List local spawns |
+| `update_spawn` | Local | Pause/resume/update spawn |
+| `cancel_spawn` | Local | Cancel spawn permanently |
+| `get_spawn_runs` | Local | View spawn run history |
 
 **General Tools** (`embient/tools.py`): `http_request`, `fetch_url`
+
+### Local Spawns (BYOK)
+
+Spawns are autonomous background agents that run locally using the user's own API keys. The spawn system consists of:
+
+- **SpawnManager** (`embient/spawns/manager.py`): Top-level orchestrator
+- **SpawnStore** (`embient/spawns/store.py`): SQLite persistence (in `~/.embient/sessions.db`)
+- **SpawnScheduler** (`embient/spawns/scheduler.py`): Asyncio polling loop (30s interval)
+- **SpawnExecutor** (`embient/spawns/executor.py`): Agent creation + execution with timeout/backoff
+- **Spawn Agent Factory** (`embient/spawns/agent_factory.py`): Restricted agents per spawn type
+
+Spawn types: `monitoring` (position management) and `task` (analysis/research).
+Schedule types: `once`, `interval` (minutes), `cron` (5-field expression, requires `croniter`).
+Spawn agents have no HITL, no SubAgent delegation, and filtered tool access.
 
 ## Key Files
 
@@ -124,14 +148,24 @@ embient/
 │   ├── graph.py         # create_deep_analysts() + middleware stack
 │   ├── technical.py     # Technical analyst subagent
 │   └── fundamental.py   # Fundamental analyst subagent
+├── spawns/
+│   ├── models.py        # SpawnRecord, SpawnRunRecord dataclasses
+│   ├── store.py         # SQLite CRUD for spawns and runs
+│   ├── manager.py       # SpawnManager (lifecycle + CRUD API)
+│   ├── scheduler.py     # Asyncio polling scheduler
+│   ├── executor.py      # Agent execution with timeout/backoff
+│   ├── agent_factory.py # create_spawn_agent() restricted agent
+│   ├── prompts.py       # Monitoring + task spawn prompts
+│   └── schedule.py      # Cron/interval/once schedule calculations
 ├── clients/
 │   ├── basement.py      # Basement API (market data, signals, memories, charts)
 │   └── park.py          # Park API (search, news, fundamentals)
 ├── trading_tools/       # @tool decorated LangChain tools
 │   ├── market_data/     # Candles, indicators, charts
-│   ├── research/        # News, fundamentals, economics
-│   ├── signals/         # Signal CRUD, position sizing
-│   └── memory.py        # Memory CRUD
+│   ├── research/        # News, fundamentals, economics, watchlist
+│   ├── signals/         # Signal CRUD, position sizing, position management, portfolio
+│   ├── memory.py        # Memory CRUD
+│   └── spawns.py        # Spawn management tools (create, list, update, cancel)
 ├── integrations/        # Sandbox providers (modal, daytona, runloop)
 ├── skills/              # Skills loading + CLI commands
 ├── widgets/             # Textual UI components (14 widgets)
@@ -141,7 +175,7 @@ libs/deepanalysts/       # Middleware & backend library (v0.1.10, PyPI)
 
 ## Interactive Commands
 
-`/clear`, `/help`, `/remember`, `/tokens`, `/quit`
+`/clear`, `/help`, `/remember`, `/tokens`, `/threads`, `/model`, `/spawns`, `/quit`
 
 ## Environment
 

@@ -1,5 +1,11 @@
 """Trading signal tools."""
 
+from embient.trading_tools.signals.portfolio import get_portfolio_summary
+from embient.trading_tools.signals.position_management import (
+    cancel_signal,
+    close_position,
+    send_notification,
+)
 from embient.trading_tools.signals.position_sizing import calculate_position_size
 from embient.trading_tools.signals.trading import (
     create_trading_insight,
@@ -9,7 +15,11 @@ from embient.trading_tools.signals.trading import (
 
 __all__ = [
     "calculate_position_size",
+    "cancel_signal",
+    "close_position",
     "create_trading_insight",
+    "get_portfolio_summary",
     "get_user_trading_insights",
+    "send_notification",
     "update_trading_insight",
 ]

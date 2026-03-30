@@ -17,7 +17,13 @@ Usage:
     auth_token = get_auth_token()
 """
 
+from __future__ import annotations
+
 from contextvars import ContextVar
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from embient.spawns.manager import SpawnManager
 
 # Auth token for authenticated API calls (CLI session token)
 _auth_token_context: ContextVar[str | None] = ContextVar("auth_token", default=None)
@@ -29,10 +35,11 @@ _thread_id_context: ContextVar[str | None] = ContextVar("thread_id", default=Non
 _user_profile_context: ContextVar[dict | None] = ContextVar("user_profile", default=None)
 
 
-
-
 # Screenshots captured via HITL (e.g., chart screenshots from request_chart_screenshot)
 _screenshots_context: ContextVar[list | None] = ContextVar("screenshots", default=None)
+
+# SpawnManager instance for spawn tools
+_spawn_manager_context: ContextVar[SpawnManager | None] = ContextVar("spawn_manager", default=None)
 
 
 # Auth Token (CLI session token)
@@ -88,6 +95,17 @@ def get_screenshots() -> list | None:
     return _screenshots_context.get()
 
 
+# SpawnManager
+def set_spawn_manager(manager: SpawnManager) -> None:
+    """Set the SpawnManager instance for spawn tools to access."""
+    _spawn_manager_context.set(manager)
+
+
+def get_spawn_manager() -> SpawnManager | None:
+    """Get the SpawnManager instance from context."""
+    return _spawn_manager_context.get()
+
+
 __all__ = [
     # Setters (for CLI startup)
     "set_auth_token",
@@ -95,10 +113,12 @@ __all__ = [
     "set_thread_id",
     "set_user_profile",
     "set_screenshots",
+    "set_spawn_manager",
     # Getters (for tools/middleware)
     "get_auth_token",
     "get_jwt_token",  # Backwards compatibility
     "get_thread_id",
     "get_user_profile",
     "get_screenshots",
+    "get_spawn_manager",
 ]

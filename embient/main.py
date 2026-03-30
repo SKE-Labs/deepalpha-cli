@@ -126,6 +126,14 @@ def parse_args() -> argparse.Namespace:
     threads_delete = threads_sub.add_parser("delete", help="Delete a thread")
     threads_delete.add_argument("thread_id", help="Thread ID to delete")
 
+    # Spawns command
+    spawns_parser = subparsers.add_parser("spawns", help="Manage local agent spawns")
+    spawns_sub = spawns_parser.add_subparsers(dest="spawns_command")
+    spawns_list = spawns_sub.add_parser("list", help="List spawns")
+    spawns_list.add_argument(
+        "--status", default=None, help="Filter by status (active, paused, completed, failed, cancelled)"
+    )
+
     # Default interactive mode
     parser.add_argument(
         "--agent",
@@ -276,6 +284,51 @@ async def run_textual_cli_async(
                     sandbox_cm.__exit__(None, None, None)
 
 
+async def _list_spawns_command(status: str | None = None) -> None:
+    """List local spawns from the command line."""
+    from embient.spawns.store import SpawnStore
+
+    store = SpawnStore()
+    await store.initialize()
+    spawns = await store.list_spawns(status=status)
+
+    if not spawns:
+        console.print("[dim]No spawns found.[/dim]")
+        return
+
+    from rich.table import Table
+
+    table = Table(title=f"Spawns ({len(spawns)})")
+    table.add_column("ID", style="dim")
+    table.add_column("Name", style="bold")
+    table.add_column("Type")
+    table.add_column("Status")
+    table.add_column("Schedule")
+    table.add_column("Runs")
+    table.add_column("Next Run")
+
+    for s in spawns:
+        status_style = {
+            "active": "green",
+            "paused": "yellow",
+            "completed": "dim",
+            "failed": "red",
+            "cancelled": "dim",
+        }.get(s.status, "")
+
+        table.add_row(
+            s.id,
+            s.name,
+            s.spawn_type,
+            f"[{status_style}]{s.status}[/{status_style}]",
+            s.schedule_display,
+            f"{s.run_count}/{s.max_runs}",
+            s.next_run_at or "N/A",
+        )
+
+    console.print(table)
+
+
 def cli_main() -> None:
     """Entry point for console script."""
     # Fix for gRPC fork issue on macOS
@@ -319,6 +372,11 @@ def cli_main() -> None:
                 asyncio.run(delete_thread_command(args.thread_id))
             else:
                 console.print("[yellow]Usage: embient threads <list|delete>[/yellow]")
+        elif args.command == "spawns":
+            if getattr(args, "spawns_command", None) == "list":
+                asyncio.run(_list_spawns_command(getattr(args, "status", None)))
+            else:
+                console.print("[yellow]Usage: embient spawns list [--status STATUS][/yellow]")
         else:
             # Interactive mode - check auth (required for Deep Analysts)
             if not is_authenticated():
@@ -376,9 +434,7 @@ def cli_main() -> None:
                 thread_id = generate_thread_id()
 
             # Non-interactive pipe mode
-            pipe_mode = getattr(args, "pipe", False) or (
-                not sys.stdin.isatty() and args.initial_prompt
-            )
+            pipe_mode = getattr(args, "pipe", False) or (not sys.stdin.isatty() and args.initial_prompt)
 
             if pipe_mode:
                 if not args.initial_prompt:
