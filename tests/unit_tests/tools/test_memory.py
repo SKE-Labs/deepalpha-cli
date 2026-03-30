@@ -13,7 +13,6 @@ from embient.trading_tools.memory import (
     update_memory,
 )
 
-
 MOCK_TOKEN = "test-jwt-token"
 
 
@@ -114,9 +113,7 @@ class TestCreateMemory:
         """Test that create_memory raises when not authenticated."""
         with patch("embient.trading_tools.memory.get_jwt_token", return_value=None):
             with pytest.raises(ToolException, match="Not authenticated"):
-                asyncio.run(
-                    create_memory.ainvoke({"name": "Test", "content": "Content"})
-                )
+                asyncio.run(create_memory.ainvoke({"name": "Test", "content": "Content"}))
 
     def test_create_memory_success(self) -> None:
         """Test successful memory creation."""
@@ -157,9 +154,7 @@ class TestCreateMemory:
                 return_value={"id": "new-mem-2"},
             ) as mock_create,
         ):
-            result = asyncio.run(
-                create_memory.ainvoke({"name": "Test", "content": "Content"})
-            )
+            result = asyncio.run(create_memory.ainvoke({"name": "Test", "content": "Content"}))
             assert "Memory created successfully" in result
             mock_create.assert_called_once_with(
                 token=MOCK_TOKEN,
@@ -179,9 +174,7 @@ class TestCreateMemory:
             ),
         ):
             with pytest.raises(ToolException, match="Failed to create memory"):
-                asyncio.run(
-                    create_memory.ainvoke({"name": "Test", "content": "Content"})
-                )
+                asyncio.run(create_memory.ainvoke({"name": "Test", "content": "Content"}))
 
 
 class TestUpdateMemory:
@@ -191,11 +184,7 @@ class TestUpdateMemory:
         """Test that update_memory raises when not authenticated."""
         with patch("embient.trading_tools.memory.get_jwt_token", return_value=None):
             with pytest.raises(ToolException, match="Not authenticated"):
-                asyncio.run(
-                    update_memory.ainvoke(
-                        {"memory_id": "mem-1", "content": "New content"}
-                    )
-                )
+                asyncio.run(update_memory.ainvoke({"memory_id": "mem-1", "content": "New content"}))
 
     def test_update_memory_no_fields(self) -> None:
         """Test that update_memory raises when no fields provided."""
@@ -213,11 +202,7 @@ class TestUpdateMemory:
                 return_value={"id": "mem-1"},
             ) as mock_update,
         ):
-            result = asyncio.run(
-                update_memory.ainvoke(
-                    {"memory_id": "mem-1", "content": "Updated content"}
-                )
-            )
+            result = asyncio.run(update_memory.ainvoke({"memory_id": "mem-1", "content": "Updated content"}))
             assert "mem-1" in result
             assert "updated successfully" in result
             assert "content updated" in result
@@ -264,11 +249,7 @@ class TestUpdateMemory:
             ),
         ):
             with pytest.raises(ToolException, match="Failed to update memory"):
-                asyncio.run(
-                    update_memory.ainvoke(
-                        {"memory_id": "mem-1", "content": "New content"}
-                    )
-                )
+                asyncio.run(update_memory.ainvoke({"memory_id": "mem-1", "content": "New content"}))
 
 
 class TestDeleteMemory:
@@ -293,9 +274,7 @@ class TestDeleteMemory:
             result = asyncio.run(delete_memory.ainvoke({"memory_id": "mem-1"}))
             assert "mem-1" in result
             assert "deleted successfully" in result
-            mock_delete.assert_called_once_with(
-                token=MOCK_TOKEN, memory_id="mem-1"
-            )
+            mock_delete.assert_called_once_with(token=MOCK_TOKEN, memory_id="mem-1")
 
     def test_delete_memory_api_failure(self) -> None:
         """Test that delete_memory raises on API failure."""

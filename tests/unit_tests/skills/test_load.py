@@ -322,8 +322,6 @@ class TestListSkillsBuiltIn:
 
     def test_user_skill_overrides_builtin(self, tmp_path: Path) -> None:
         """Test that user skills override built-in skills with same name."""
-        from embient.skills.load import BUILT_IN_SKILLS_DIR
-
         # Create a built-in skills dir with a skill
         builtin_dir = tmp_path / "builtins"
         builtin_dir.mkdir()
