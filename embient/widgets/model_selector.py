@@ -59,6 +59,8 @@ class ModelSelectorScreen(ModalScreen[tuple[str, str] | None]):
     Returns (model_spec, provider) tuple on selection, or None on cancel.
     """
 
+    ESCAPE_TO_MINIMIZE = False
+
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("up", "move_up", "Up", show=False, priority=True),
         Binding("k", "move_up", "Up", show=False, priority=True),
@@ -220,6 +222,7 @@ class ModelSelectorScreen(ModalScreen[tuple[str, str] | None]):
     def on_key(self, event: Key) -> None:
         if event.key == "escape":
             event.prevent_default()
+            event.stop()
             self.action_cancel()
 
     def on_input_changed(self, event: Input.Changed) -> None:

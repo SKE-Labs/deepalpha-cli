@@ -108,10 +108,21 @@ def parse_args() -> argparse.Namespace:
     # Skills command - setup delegated to skills module
     setup_skills_parser(subparsers)
 
-    # Auth commands
+    # Auth commands (Basement)
     subparsers.add_parser("login", help="Authenticate with Embient")
     subparsers.add_parser("logout", help="Clear stored credentials")
     subparsers.add_parser("status", help="Show authentication status")
+
+    # LLM provider auth commands
+    auth_parser = subparsers.add_parser("auth", help="Manage LLM provider authentication")
+    auth_sub = auth_parser.add_subparsers(dest="auth_command")
+    auth_sub.add_parser("copilot", help="Login with GitHub Copilot (device flow)")
+    auth_sub.add_parser("codex", help="Login with OpenAI Codex (ChatGPT Plus/Pro)")
+    auth_sub.add_parser("gemini", help="Login with Google Gemini CLI (Google AI Pro/Ultra)")
+    auth_sub.add_parser("logout-copilot", help="Remove GitHub Copilot credentials")
+    auth_sub.add_parser("logout-codex", help="Remove OpenAI Codex credentials")
+    auth_sub.add_parser("logout-gemini", help="Remove Google Gemini credentials")
+    auth_sub.add_parser("status", help="Show LLM provider auth status")
 
     # Threads command
     threads_parser = subparsers.add_parser("threads", help="Manage conversation threads")
@@ -162,7 +173,24 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--model",
-        help="Model to use (e.g., claude-sonnet-4-5-20250929, gpt-5-mini). Provider is auto-detected from model name.",
+        help="Model to use (e.g., claude-sonnet-4-5-20250929, gpt-5-mini, copilot/gpt-4o). Provider is auto-detected from model name.",
+    )
+    parser.add_argument(
+        "--provider",
+        choices=[
+            "openai",
+            "anthropic",
+            "google",
+            "copilot",
+            "codex",
+            "gemini-cli",
+            "zai",
+            "alibaba",
+            "minimax",
+            "synthetic",
+            "chutes",
+        ],
+        help="Force a specific LLM provider (overrides auto-detection)",
     )
     parser.add_argument(
         "--auto-approve",
@@ -205,6 +233,7 @@ async def run_textual_cli_async(
     sandbox_type: str = "none",
     sandbox_id: str | None = None,
     model_name: str | None = None,
+    provider_name: str | None = None,
     thread_id: str | None = None,
     is_resumed: bool = False,
     initial_prompt: str | None = None,
@@ -217,13 +246,14 @@ async def run_textual_cli_async(
         sandbox_type: Type of sandbox ("none", "modal", "runloop", "daytona")
         sandbox_id: Optional existing sandbox ID to reuse
         model_name: Optional model name to use
+        provider_name: Optional provider override (copilot, zai, etc.)
         thread_id: Thread ID to use (new or resumed)
         is_resumed: Whether this is a resumed session
         initial_prompt: Optional prompt to auto-submit when session starts
     """
     from embient.app import run_textual_app
 
-    model = create_model(model_name)
+    model = create_model(model_name, provider_override=provider_name)
 
     # Show thread info
     if is_resumed:
@@ -329,6 +359,42 @@ async def _list_spawns_command(status: str | None = None) -> None:
     console.print(table)
 
 
+def _show_provider_auth_status() -> None:
+    """Display authentication status for all LLM providers."""
+    from embient.config import settings
+
+    console.print()
+    console.print("[bold]LLM Provider Status[/bold]")
+    console.print()
+
+    console.print("  [bold]BYOK (API keys)[/bold]")
+    byok = [
+        ("OpenAI", "OPENAI_API_KEY", settings.has_openai),
+        ("Anthropic", "ANTHROPIC_API_KEY", settings.has_anthropic),
+        ("Google", "GOOGLE_API_KEY", settings.has_google),
+        ("Z.AI", "ZAI_API_KEY", settings.has_zai),
+        ("Alibaba", "ALIBABA_API_KEY", settings.has_alibaba),
+        ("MiniMax", "MINIMAX_API_KEY", settings.has_minimax),
+        ("Synthetic", "SYNTHETIC_API_KEY", settings.has_synthetic),
+        ("Chutes", "CHUTES_API_KEY", settings.has_chutes),
+    ]
+    for name, hint, available in byok:
+        status = "[green]configured[/green]" if available else "[dim]not configured[/dim]"
+        console.print(f"    {name:16s} {status}  [dim]({hint})[/dim]")
+
+    console.print()
+    console.print("  [bold]Subscriptions (OAuth)[/bold]")
+    subs = [
+        ("GitHub Copilot", "embient auth copilot", settings.has_copilot),
+        ("OpenAI Codex", "embient auth codex", settings.has_codex),
+        ("Google Gemini", "embient auth gemini", settings.has_gemini_cli),
+    ]
+    for name, hint, available in subs:
+        status = "[green]configured[/green]" if available else "[dim]not configured[/dim]"
+        console.print(f"    {name:16s} {status}  [dim]({hint})[/dim]")
+    console.print()
+
+
 def cli_main() -> None:
     """Entry point for console script."""
     # Fix for gRPC fork issue on macOS
@@ -372,6 +438,38 @@ def cli_main() -> None:
                 asyncio.run(delete_thread_command(args.thread_id))
             else:
                 console.print("[yellow]Usage: embient threads <list|delete>[/yellow]")
+        elif args.command == "auth":
+            if args.auth_command == "copilot":
+                from embient.providers.copilot import copilot_login_interactive
+
+                copilot_login_interactive()
+            elif args.auth_command == "codex":
+                from embient.providers.codex import codex_login_interactive
+
+                codex_login_interactive()
+            elif args.auth_command == "gemini":
+                from embient.providers.gemini import gemini_login_interactive
+
+                gemini_login_interactive()
+            elif args.auth_command == "logout-copilot":
+                from embient.providers.copilot import CopilotCredentialStore
+
+                CopilotCredentialStore().clear()
+                console.print("[green]Copilot credentials removed.[/green]")
+            elif args.auth_command == "logout-codex":
+                from embient.providers.codex import CodexCredentialStore
+
+                CodexCredentialStore().clear()
+                console.print("[green]Codex credentials removed.[/green]")
+            elif args.auth_command == "logout-gemini":
+                from embient.providers.gemini import GeminiCredentialStore
+
+                GeminiCredentialStore().clear()
+                console.print("[green]Gemini credentials removed.[/green]")
+            elif args.auth_command == "status":
+                _show_provider_auth_status()
+            else:
+                console.print("[yellow]Usage: embient auth <copilot|codex|gemini|status|logout-*>[/yellow]")
         elif args.command == "spawns":
             if getattr(args, "spawns_command", None) == "list":
                 asyncio.run(_list_spawns_command(getattr(args, "status", None)))
@@ -448,6 +546,7 @@ def cli_main() -> None:
                         message=args.initial_prompt,
                         assistant_id=args.agent,
                         model_name=getattr(args, "model", None),
+                        provider_name=getattr(args, "provider", None),
                         quiet=getattr(args, "quiet", False),
                         auto_approve=True,
                     )
@@ -462,6 +561,7 @@ def cli_main() -> None:
                     sandbox_type=args.sandbox,
                     sandbox_id=args.sandbox_id,
                     model_name=getattr(args, "model", None),
+                    provider_name=getattr(args, "provider", None),
                     thread_id=thread_id,
                     is_resumed=is_resumed,
                     initial_prompt=getattr(args, "initial_prompt", None),

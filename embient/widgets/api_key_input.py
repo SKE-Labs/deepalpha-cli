@@ -22,6 +22,11 @@ _PLACEHOLDER: dict[str, str] = {
     "openai": "sk-...",
     "anthropic": "sk-ant-...",
     "google": "AIza...",
+    "zai": "paste Z.AI API key",
+    "alibaba": "sk-sp-...",
+    "minimax": "paste MiniMax API key",
+    "synthetic": "paste Synthetic API key",
+    "chutes": "paste Chutes API key",
 }
 
 

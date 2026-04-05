@@ -594,16 +594,28 @@ class EmbientApp(App):
                     model_name = model_spec
 
                 if has_provider_credentials(provider) is False:
-                    # Provider needs an API key — prompt the user
+                    # OAuth providers need `embient auth <provider>`, not an API key
+                    from embient.model_config import _FILE_CREDENTIAL_PROVIDERS
+
+                    if provider in _FILE_CREDENTIAL_PROVIDERS:
+                        auth_cmd = provider.replace("gemini-cli", "gemini")
+                        self.run_worker(
+                            self._mount_message(
+                                SystemMessage(f"{provider} requires authentication. Run: embient auth {auth_cmd}")
+                            )
+                        )
+                        return
+
+                    # API-key providers — prompt the user
                     def on_key_entered(key: str | None) -> None:
                         if key is None:
                             self.run_worker(self._mount_message(SystemMessage("Model switch cancelled.")))
                             return
-                        self.run_worker(self._switch_model(model_name))
+                        self.run_worker(self._switch_model(model_name, provider))
 
                     self.push_screen(ApiKeyInputScreen(provider), callback=on_key_entered)
                 else:
-                    self.run_worker(self._switch_model(model_name))
+                    self.run_worker(self._switch_model(model_name, provider))
 
             self.push_screen(
                 ModelSelectorScreen(
@@ -860,14 +872,14 @@ class EmbientApp(App):
         await self._mount_message(SystemMessage(f"Switched to thread: {thread_id}"))
         await self._load_thread_history()
 
-    async def _switch_model(self, model_name: str) -> None:
+    async def _switch_model(self, model_name: str, provider: str | None = None) -> None:
         """Switch to a different LLM model, recreating the agent."""
         from embient.agent import create_cli_agent
         from embient.config import create_model, settings
         from embient.sessions import generate_thread_id
 
         try:
-            model = create_model(model_name)
+            model = create_model(model_name, provider_override=provider)
         except SystemExit:
             await self._mount_message(ErrorMessage(f"Failed to switch to model: {model_name}"))
             return
@@ -930,6 +942,15 @@ class EmbientApp(App):
         else:
             self._quit_pending = True
             self.notify("Press Ctrl+C again to quit", timeout=3)
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """Disable app-level escape binding when a modal screen is active."""
+        if action == "interrupt":
+            from textual.screen import ModalScreen
+
+            if isinstance(self.screen, ModalScreen):
+                return False
+        return True
 
     def action_interrupt(self) -> None:
         """Handle escape key - interrupt agent or reject approval.

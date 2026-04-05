@@ -218,6 +218,7 @@ async def run_non_interactive(
     message: str,
     assistant_id: str = "agent",
     model_name: str | None = None,
+    provider_name: str | None = None,
     *,
     quiet: bool = False,
     auto_approve: bool = True,
@@ -230,6 +231,7 @@ async def run_non_interactive(
         message: The task/message to execute.
         assistant_id: Agent identifier for memory storage.
         model_name: Optional model name to use.
+        provider_name: Optional provider override (copilot, zai, etc.).
         quiet: When True, console output goes to stderr; stdout is agent text only.
         auto_approve: Auto-approve all HITL prompts.
 
@@ -239,7 +241,7 @@ async def run_non_interactive(
     console = Console(stderr=True) if quiet else Console()
 
     try:
-        model = create_model(model_name)
+        model = create_model(model_name, provider_override=provider_name)
     except SystemExit:
         console.print("[bold red]Error:[/bold red] Failed to create model")
         return 1

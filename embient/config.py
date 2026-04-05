@@ -147,21 +147,27 @@ class Settings:
         user_langchain_project: Original LANGSMITH_PROJECT from environment (for user code)
     """
 
-    # API keys
+    # API keys (BYOK)
     openai_api_key: str | None
     anthropic_api_key: str | None
     google_api_key: str | None
+    zai_api_key: str | None
+    alibaba_api_key: str | None
+    minimax_api_key: str | None
+    synthetic_api_key: str | None
+    chutes_api_key: str | None
     tavily_api_key: str | None
 
     # LangSmith configuration
     embient_langchain_project: str | None  # For Embient agent tracing
     user_langchain_project: str | None  # Original LANGSMITH_PROJECT for user code
 
-    # Model configuration
-    model_name: str | None = None  # Currently active model name
-    model_provider: str | None = None  # Provider (openai, anthropic, google)
-
-    # Project information
+    # Fields with defaults must come after fields without defaults
+    copilot_authenticated: bool = False
+    codex_authenticated: bool = False
+    gemini_cli_authenticated: bool = False
+    model_name: str | None = None
+    model_provider: str | None = None
     project_root: Path | None = None
 
     @classmethod
@@ -178,24 +184,55 @@ class Settings:
         openai_key = os.environ.get("OPENAI_API_KEY")
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
         google_key = os.environ.get("GOOGLE_API_KEY")
+        zai_key = os.environ.get("ZAI_API_KEY")
+        alibaba_key = os.environ.get("ALIBABA_API_KEY")
+        minimax_key = os.environ.get("MINIMAX_API_KEY")
+        synthetic_key = os.environ.get("SYNTHETIC_API_KEY")
+        chutes_key = os.environ.get("CHUTES_API_KEY")
         tavily_key = os.environ.get("TAVILY_API_KEY")
 
         # Detect LangSmith configuration
-        # EMBIENT_LANGSMITH_PROJECT: Project for Embient agent tracing
-        # user_langchain_project: User's ORIGINAL LANGSMITH_PROJECT (before override)
-        # Note: LANGSMITH_PROJECT was already overridden at module import time (above)
-        # so we use the saved original value, not the current os.environ value
         embient_langchain_project = os.environ.get("EMBIENT_LANGSMITH_PROJECT")
-        user_langchain_project = _original_langsmith_project  # Use saved original!
+        # Use saved original LANGSMITH_PROJECT (before override at module import time)
+        user_langchain_project = _original_langsmith_project
 
         # Detect project
         project_root = _find_project_root(start_path)
+
+        # Detect subscription providers (file-based credentials)
+        copilot_auth = codex_auth = gemini_cli_auth = False
+        try:
+            from embient.providers.copilot import CopilotCredentialStore
+
+            copilot_auth = CopilotCredentialStore().has_github_token()
+        except Exception:
+            pass
+        try:
+            from embient.providers.codex import CodexCredentialStore
+
+            codex_auth = CodexCredentialStore().has_credentials()
+        except Exception:
+            pass
+        try:
+            from embient.providers.gemini import GeminiCredentialStore
+
+            gemini_cli_auth = GeminiCredentialStore().has_credentials()
+        except Exception:
+            pass
 
         return cls(
             openai_api_key=openai_key,
             anthropic_api_key=anthropic_key,
             google_api_key=google_key,
+            zai_api_key=zai_key,
+            alibaba_api_key=alibaba_key,
+            minimax_api_key=minimax_key,
+            synthetic_api_key=synthetic_key,
+            chutes_api_key=chutes_key,
             tavily_api_key=tavily_key,
+            copilot_authenticated=copilot_auth,
+            codex_authenticated=codex_auth,
+            gemini_cli_authenticated=gemini_cli_auth,
             embient_langchain_project=embient_langchain_project,
             user_langchain_project=user_langchain_project,
             project_root=project_root,
@@ -215,6 +252,39 @@ class Settings:
     def has_google(self) -> bool:
         """Check if Google API key is configured."""
         return self.google_api_key is not None
+
+    @property
+    def has_zai(self) -> bool:
+        """Check if Z.AI API key is configured."""
+        return self.zai_api_key is not None
+
+    @property
+    def has_alibaba(self) -> bool:
+        return self.alibaba_api_key is not None
+
+    @property
+    def has_minimax(self) -> bool:
+        return self.minimax_api_key is not None
+
+    @property
+    def has_synthetic(self) -> bool:
+        return self.synthetic_api_key is not None
+
+    @property
+    def has_chutes(self) -> bool:
+        return self.chutes_api_key is not None
+
+    @property
+    def has_copilot(self) -> bool:
+        return self.copilot_authenticated
+
+    @property
+    def has_codex(self) -> bool:
+        return self.codex_authenticated
+
+    @property
+    def has_gemini_cli(self) -> bool:
+        return self.gemini_cli_authenticated
 
     @property
     def has_tavily(self) -> bool:
@@ -446,59 +516,102 @@ def _detect_provider(model_name: str) -> str | None:
         model_name: Model name to detect provider from
 
     Returns:
-        Provider name (openai, anthropic, google) or None if can't detect
+        Provider name or None if can't detect.
     """
+    # Explicit provider/ prefix routing
+    for prefix in ("copilot/", "codex/"):
+        if model_name.startswith(prefix):
+            return prefix.rstrip("/")
+
     model_lower = model_name.lower()
-    if any(x in model_lower for x in ["gpt", "o1", "o3"]):
+    if any(x in model_lower for x in ["gpt", "o1", "o3", "o4"]):
         return "openai"
     if "claude" in model_lower:
         return "anthropic"
     if "gemini" in model_lower:
         return "google"
+    if model_lower.startswith("glm"):
+        return "zai"
+    if model_lower.startswith("qwen"):
+        return "alibaba"
+    if model_lower.startswith("minimax"):
+        return "minimax"
+    if "codex" in model_lower:
+        return "codex"
+    if "deepseek" in model_lower:
+        return "chutes"
     return None
 
 
-def create_model(model_name_override: str | None = None) -> BaseChatModel:
+def create_model(
+    model_name_override: str | None = None,
+    provider_override: str | None = None,
+) -> BaseChatModel:
     """Create the appropriate model based on available API keys.
 
     Uses the global settings instance to determine which model to create.
 
     Args:
         model_name_override: Optional model name to use instead of environment variable
+        provider_override: Force a specific provider (skips auto-detection)
 
     Returns:
-        ChatModel instance (OpenAI, Anthropic, or Google)
+        ChatModel instance (OpenAI, Anthropic, Google, Copilot, or Z.AI)
 
     Raises:
         SystemExit if no API key is configured or model provider can't be determined
     """
     # Determine provider and model
-    if model_name_override:
-        # Use provided model, auto-detect provider
+    if provider_override:
+        provider = provider_override
+        if model_name_override:
+            model_name = model_name_override
+        else:
+            from embient.model_config import get_available_models
+
+            models = get_available_models()
+            if models.get(provider):
+                model_name = models[provider][0]
+            else:
+                console.print(f"[bold red]Error:[/bold red] Unknown provider: {provider}")
+                sys.exit(1)
+    elif model_name_override:
         provider = _detect_provider(model_name_override)
         if not provider:
             console.print(
                 f"[bold red]Error:[/bold red] Could not detect provider from model name: {model_name_override}"
             )
-            console.print("\nSupported model name patterns:")
-            console.print("  - OpenAI: gpt-*, o1-*, o3-*")
-            console.print("  - Anthropic: claude-*")
-            console.print("  - Google: gemini-*")
+            console.print("\nSupported: gpt-*/o*-* (openai), claude-* (anthropic), gemini-* (google),")
+            console.print("  copilot/<model>, codex/<model>, glm-* (zai), qwen* (alibaba),")
+            console.print("  MiniMax-* (minimax), *codex* (codex), deepseek* (chutes)")
             sys.exit(1)
 
-        # Check if API key for detected provider is available
-        if provider == "openai" and not settings.has_openai:
-            console.print(f"[bold red]Error:[/bold red] Model '{model_name_override}' requires OPENAI_API_KEY")
-            sys.exit(1)
-        elif provider == "anthropic" and not settings.has_anthropic:
-            console.print(f"[bold red]Error:[/bold red] Model '{model_name_override}' requires ANTHROPIC_API_KEY")
-            sys.exit(1)
-        elif provider == "google" and not settings.has_google:
-            console.print(f"[bold red]Error:[/bold red] Model '{model_name_override}' requires GOOGLE_API_KEY")
+        # Check credentials
+        _check: dict[str, tuple[bool, str | None]] = {
+            "openai": (settings.has_openai, "OPENAI_API_KEY"),
+            "anthropic": (settings.has_anthropic, "ANTHROPIC_API_KEY"),
+            "google": (settings.has_google, "GOOGLE_API_KEY"),
+            "zai": (settings.has_zai, "ZAI_API_KEY"),
+            "alibaba": (settings.has_alibaba, "ALIBABA_API_KEY"),
+            "minimax": (settings.has_minimax, "MINIMAX_API_KEY"),
+            "synthetic": (settings.has_synthetic, "SYNTHETIC_API_KEY"),
+            "chutes": (settings.has_chutes, "CHUTES_API_KEY"),
+            "copilot": (settings.has_copilot, None),
+            "codex": (settings.has_codex, None),
+            "gemini-cli": (settings.has_gemini_cli, None),
+        }
+        has_creds, env_hint = _check.get(provider, (True, None))
+        if not has_creds:
+            if env_hint is None:
+                console.print(f"[bold red]Error:[/bold red] Model '{model_name_override}' requires auth.")
+                console.print(f"Run: [cyan]embient auth {provider}[/cyan]")
+            else:
+                console.print(f"[bold red]Error:[/bold red] Model '{model_name_override}' requires {env_hint}")
             sys.exit(1)
 
         model_name = model_name_override
     # Use environment variable defaults, detect provider by API key priority
+    # BYOK providers first, then subscription providers
     elif settings.has_openai:
         provider = "openai"
         model_name = os.environ.get("OPENAI_MODEL", "gpt-5-mini")
@@ -508,20 +621,45 @@ def create_model(model_name_override: str | None = None) -> BaseChatModel:
     elif settings.has_google:
         provider = "google"
         model_name = os.environ.get("GOOGLE_MODEL", "gemini-3-flash-preview")
+    elif settings.has_copilot:
+        provider = "copilot"
+        model_name = os.environ.get("COPILOT_MODEL", "claude-sonnet-4-5-20250929")
+    elif settings.has_codex:
+        provider = "codex"
+        model_name = os.environ.get("CODEX_MODEL", "gpt-5.3-codex")
+    elif settings.has_gemini_cli:
+        provider = "gemini-cli"
+        model_name = os.environ.get("GEMINI_CLI_MODEL", "gemini-3-pro-preview")
+    elif settings.has_zai:
+        from embient.providers.zai import DEFAULT_ZAI_MODEL
+
+        provider = "zai"
+        model_name = os.environ.get("ZAI_MODEL", DEFAULT_ZAI_MODEL)
+    elif settings.has_alibaba:
+        provider = "alibaba"
+        model_name = os.environ.get("ALIBABA_MODEL", "qwen3.5-plus")
+    elif settings.has_minimax:
+        provider = "minimax"
+        model_name = os.environ.get("MINIMAX_MODEL", "MiniMax-M2.5")
+    elif settings.has_synthetic:
+        provider = "synthetic"
+        model_name = os.environ.get("SYNTHETIC_MODEL", "qwen3-coder-480b")
+    elif settings.has_chutes:
+        provider = "chutes"
+        model_name = os.environ.get("CHUTES_MODEL", "deepseek-ai/DeepSeek-V3-0324")
     else:
-        console.print("[bold red]Error:[/bold red] No LLM API key found.")
+        console.print("[bold red]Error:[/bold red] No LLM credentials found.")
         console.print()
-        console.print("embient-cli requires you to provide your own API key (BYOK).")
-        console.print("Set one of the following environment variables:")
+        console.print("[bold]API keys[/bold] — set one of:")
+        console.print("  [cyan]export OPENAI_API_KEY=...[/cyan]     [cyan]export ALIBABA_API_KEY=...[/cyan]")
+        console.print("  [cyan]export ANTHROPIC_API_KEY=...[/cyan]  [cyan]export MINIMAX_API_KEY=...[/cyan]")
+        console.print("  [cyan]export GOOGLE_API_KEY=...[/cyan]     [cyan]export SYNTHETIC_API_KEY=...[/cyan]")
+        console.print("  [cyan]export ZAI_API_KEY=...[/cyan]        [cyan]export CHUTES_API_KEY=...[/cyan]")
         console.print()
-        console.print("  [cyan]export OPENAI_API_KEY=sk-...[/cyan]       # OpenAI")
-        console.print("  [cyan]export ANTHROPIC_API_KEY=sk-ant-...[/cyan] # Anthropic")
-        console.print("  [cyan]export GOOGLE_API_KEY=AIza...[/cyan]       # Google")
-        console.print()
-        console.print("Get API keys from:")
-        console.print("  • OpenAI: https://platform.openai.com/api-keys")
-        console.print("  • Anthropic: https://console.anthropic.com/")
-        console.print("  • Google: https://aistudio.google.com/apikey")
+        console.print("[bold]Subscriptions[/bold] — authenticate with:")
+        console.print("  [cyan]embient auth copilot[/cyan]    # GitHub Copilot")
+        console.print("  [cyan]embient auth codex[/cyan]      # ChatGPT Plus/Pro")
+        console.print("  [cyan]embient auth gemini[/cyan]     # Google AI Pro/Ultra")
         console.print()
         console.print("[dim]Or add the key to a .env file in your project.[/dim]")
         sys.exit(1)
@@ -531,10 +669,16 @@ def create_model(model_name_override: str | None = None) -> BaseChatModel:
     settings.model_provider = provider
 
     # Create and return the model
+    return _instantiate_model(provider, model_name)
+
+
+def _instantiate_model(provider: str, model_name: str) -> BaseChatModel:
+    """Create the LangChain model instance for a given provider."""
     if provider == "openai":
         from langchain_openai import ChatOpenAI
 
         return ChatOpenAI(model=model_name)
+
     if provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
 
@@ -542,15 +686,13 @@ def create_model(model_name_override: str | None = None) -> BaseChatModel:
             model_name=model_name,
             max_tokens=20_000,  # type: ignore[arg-type]
         )
+
     if provider == "google":
         from langchain_google_genai import ChatGoogleGenerativeAI
 
         # Workaround for google-genai SDK bug where HttpResponse.json property
         # assumes response_stream is a list, but it can be a raw ClientResponse
-        # when an API error occurs. This causes TypeError when LangChain's error
-        # handler calls hasattr(response, "json"). The segments() method in the
-        # same class handles this correctly — the json property does not.
-        # See: https://github.com/googleapis/python-genai/issues
+        # when an API error occurs.
         try:
             from google.genai._api_client import HttpResponse
 
@@ -571,6 +713,93 @@ def create_model(model_name_override: str | None = None) -> BaseChatModel:
             temperature=0,
             max_tokens=None,
         )
+
+    if provider == "copilot":
+        import httpx
+        from langchain_openai import ChatOpenAI
+
+        from embient.providers.copilot import CopilotAuth, CopilotTokenManager
+
+        manager = CopilotTokenManager()
+        _token, base_url = manager.get_token_sync()
+        actual_model = model_name.removeprefix("copilot/")
+        auth = CopilotAuth(manager)
+        return ChatOpenAI(
+            model=actual_model,
+            base_url=f"{base_url}/v1",
+            api_key="copilot",  # placeholder — overridden by CopilotAuth per-request
+            http_client=httpx.Client(auth=auth),
+            http_async_client=httpx.AsyncClient(auth=auth),
+        )
+
+    if provider == "codex":
+        import httpx
+        from langchain_openai import ChatOpenAI
+
+        from embient.providers.codex import CodexAuth, CodexTokenManager
+
+        manager = CodexTokenManager()
+        actual_model = model_name.removeprefix("codex/")
+        auth = CodexAuth(manager)
+        return ChatOpenAI(
+            model=actual_model,
+            base_url="https://chatgpt.com/backend-api/codex",
+            api_key="codex",  # placeholder — overridden by CodexAuth per-request
+            http_client=httpx.Client(auth=auth),
+            http_async_client=httpx.AsyncClient(auth=auth),
+        )
+
+    if provider == "gemini-cli":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
+        from embient.providers.gemini import GeminiTokenManager
+
+        manager = GeminiTokenManager()
+        token = manager.get_token_sync()
+        return ChatGoogleGenerativeAI(
+            model=model_name,
+            api_key=token,
+            temperature=0,
+            max_tokens=None,
+        )
+
+    # All remaining providers use ChatOpenAI with a custom base_url
+    return _create_apikey_provider(provider, model_name)
+
+
+def _create_apikey_provider(provider: str, model_name: str) -> BaseChatModel:
+    """Create a ChatOpenAI instance for simple API-key-based subscription providers."""
+    from langchain_openai import ChatOpenAI
+
+    _configs: dict[str, tuple[str, ...]] = {
+        # provider: (module_path, get_config_func)
+        "zai": ("embient.providers.zai", "get_zai_config"),
+        "alibaba": ("embient.providers.alibaba", "get_alibaba_config"),
+        "minimax": ("embient.providers.minimax", "get_minimax_config"),
+        "synthetic": ("embient.providers.synthetic", "get_synthetic_config"),
+        "chutes": ("embient.providers.chutes", "get_chutes_config"),
+    }
+
+    entry = _configs.get(provider)
+    if not entry:
+        console.print(f"[bold red]Error:[/bold red] Unknown provider: {provider}")
+        sys.exit(1)
+
+    import importlib
+
+    mod = importlib.import_module(entry[0])
+    get_config = getattr(mod, entry[1])
+    config = get_config()
+    if not config:
+        console.print(f"[bold red]Error:[/bold red] {provider} API key is not set.")
+        sys.exit(1)
+
+    api_key, base_url, _default_model = config
+    return ChatOpenAI(
+        model=model_name,
+        base_url=base_url,
+        api_key=api_key,
+    )
 
 
 def validate_model_capabilities(model: BaseChatModel, model_name: str) -> None:
