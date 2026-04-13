@@ -143,6 +143,7 @@ class BasementSkillsLoader:
         client: BasementClient | None = None,
         token_provider: Callable[[], str | None] | None = None,
         store: BaseStore | None = None,
+        store_namespace: str = "filesystem",
         supabase_url: str | None = None,
         built_in_dirs: list[str] | None = None,
     ) -> None:
@@ -153,6 +154,9 @@ class BasementSkillsLoader:
             token_provider: Callable that returns JWT token.
             store: LangGraph Store instance for writing skill content.
                    If None, skills won't be available via read_file.
+            store_namespace: Second element of the store namespace tuple.
+                   Skills are written to ``(user_id, store_namespace)``.
+                   Defaults to ``"filesystem"`` for backward compatibility.
             supabase_url: Supabase URL for asset downloads. Required if store is provided.
             built_in_dirs: Directories containing built-in skills (SKILL.md files).
                           These are loaded from the filesystem and merged with API skills.
@@ -161,6 +165,7 @@ class BasementSkillsLoader:
         self._token_provider = token_provider
         self._cache: dict[str, list[dict[str, Any]]] = {}
         self._store = store
+        self._store_namespace = store_namespace
         self._supabase_url = supabase_url
         self._written_skills: set[str] = set()  # Track which skills already written
         self._built_in_dirs = built_in_dirs or []
@@ -318,7 +323,7 @@ class BasementSkillsLoader:
 
         from deepanalysts.backends.utils import create_file_data
 
-        namespace = (user_id, "filesystem")
+        namespace = (user_id, self._store_namespace)
 
         # Collect all put operations for batch execution
         put_ops: list[PutOp] = []

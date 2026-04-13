@@ -284,3 +284,42 @@ async def test_basement_skills_loader_caching():
         loader.clear_cache()
         await loader.load_skills(agent_name="ta", user_id="user1")
         assert mock_get_skills.call_count == 2
+
+
+@pytest.mark.anyio
+async def test_basement_skills_loader_custom_store_namespace():
+    """Test BasementSkillsLoader writes to custom namespace when store_namespace is set."""
+    mock_skills = [
+        {
+            "name": "ns-skill",
+            "path": "/skills/ns-skill",
+            "content": "# Namespaced Skill",
+            "target_agents": [],
+            "assets": [],
+        }
+    ]
+
+    store = InMemoryStore()
+    jwt_token = "jwt"
+
+    loader = BasementSkillsLoader(
+        store=store,
+        store_namespace="skills",
+        token_provider=lambda: jwt_token,
+    )
+
+    with patch(
+        "deepanalysts.backends.basement.basement_client.get_active_skills",
+        new_callable=AsyncMock,
+    ) as mock_get_skills:
+        mock_get_skills.return_value = mock_skills
+        await loader.load_skills(agent_name="orchestrator", user_id="user-abc")
+
+    # Verify data is in the custom namespace, not "filesystem"
+    custom_ns = await store.aget(("user-abc", "skills"), "/ns-skill/SKILL.md")
+    assert custom_ns is not None
+    assert "Namespaced Skill" in "\n".join(custom_ns.value["content"])
+
+    # Verify data is NOT in the default namespace
+    default_ns = await store.aget(("user-abc", "filesystem"), "/ns-skill/SKILL.md")
+    assert default_ns is None
