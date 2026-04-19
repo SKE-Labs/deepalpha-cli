@@ -1,6 +1,6 @@
 [project]
 name = "deepalpha"
-version = "0.1.12"
+version = "0.1.13"
 description = "DeepAlpha CLI - AI Trading Team"
 readme = "README.md"
 license = { text = "MIT" }
