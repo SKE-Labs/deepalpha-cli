@@ -26,10 +26,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/SKE-Labs/embient-cli"
-Documentation = "https://github.com/SKE-Labs/embient-cli/tree/main/libs/deepanalysts"
-Repository = "https://github.com/SKE-Labs/embient-cli.git"
-Issues = "https://github.com/SKE-Labs/embient-cli/issues"
+Homepage = "https://github.com/SKE-Labs/deepalpha-cli"
+Documentation = "https://github.com/SKE-Labs/deepalpha-cli/tree/main/libs/deepanalysts"
+Repository = "https://github.com/SKE-Labs/deepalpha-cli.git"
+Issues = "https://github.com/SKE-Labs/deepalpha-cli/issues"
 
 [project.optional-dependencies]
 postgres = [

@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from langchain_core.tools import ToolException
 
-from embient.trading_tools.memory import (
+from deepalpha.trading_tools.memory import (
     create_memory,
     delete_memory,
     list_memories,
@@ -21,16 +21,16 @@ class TestListMemories:
 
     def test_list_memories_no_auth(self) -> None:
         """Test that list_memories raises when not authenticated."""
-        with patch("embient.trading_tools.memory.get_jwt_token", return_value=None):
+        with patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=None):
             with pytest.raises(ToolException, match="Not authenticated"):
                 asyncio.run(list_memories.ainvoke({}))
 
     def test_list_memories_api_failure(self) -> None:
         """Test that list_memories raises on API failure."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.list_memories",
+                "deepalpha.trading_tools.memory.basement_client.list_memories",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
@@ -41,9 +41,9 @@ class TestListMemories:
     def test_list_memories_empty(self) -> None:
         """Test that list_memories returns message when no memories exist."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.list_memories",
+                "deepalpha.trading_tools.memory.basement_client.list_memories",
                 new_callable=AsyncMock,
                 return_value=[],
             ),
@@ -69,9 +69,9 @@ class TestListMemories:
             },
         ]
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.list_memories",
+                "deepalpha.trading_tools.memory.basement_client.list_memories",
                 new_callable=AsyncMock,
                 return_value=memories,
             ),
@@ -95,9 +95,9 @@ class TestListMemories:
             },
         ]
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.list_memories",
+                "deepalpha.trading_tools.memory.basement_client.list_memories",
                 new_callable=AsyncMock,
                 return_value=memories,
             ),
@@ -111,16 +111,16 @@ class TestCreateMemory:
 
     def test_create_memory_no_auth(self) -> None:
         """Test that create_memory raises when not authenticated."""
-        with patch("embient.trading_tools.memory.get_jwt_token", return_value=None):
+        with patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=None):
             with pytest.raises(ToolException, match="Not authenticated"):
                 asyncio.run(create_memory.ainvoke({"name": "Test", "content": "Content"}))
 
     def test_create_memory_success(self) -> None:
         """Test successful memory creation."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.create_memory",
+                "deepalpha.trading_tools.memory.basement_client.create_memory",
                 new_callable=AsyncMock,
                 return_value={"id": "new-mem-1"},
             ) as mock_create,
@@ -147,9 +147,9 @@ class TestCreateMemory:
     def test_create_memory_without_description(self) -> None:
         """Test memory creation without optional description."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.create_memory",
+                "deepalpha.trading_tools.memory.basement_client.create_memory",
                 new_callable=AsyncMock,
                 return_value={"id": "new-mem-2"},
             ) as mock_create,
@@ -166,9 +166,9 @@ class TestCreateMemory:
     def test_create_memory_api_failure(self) -> None:
         """Test that create_memory raises on API failure."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.create_memory",
+                "deepalpha.trading_tools.memory.basement_client.create_memory",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
@@ -182,22 +182,22 @@ class TestUpdateMemory:
 
     def test_update_memory_no_auth(self) -> None:
         """Test that update_memory raises when not authenticated."""
-        with patch("embient.trading_tools.memory.get_jwt_token", return_value=None):
+        with patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=None):
             with pytest.raises(ToolException, match="Not authenticated"):
                 asyncio.run(update_memory.ainvoke({"memory_id": "mem-1", "content": "New content"}))
 
     def test_update_memory_no_fields(self) -> None:
         """Test that update_memory raises when no fields provided."""
-        with patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN):
+        with patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN):
             with pytest.raises(ToolException, match="At least one field"):
                 asyncio.run(update_memory.ainvoke({"memory_id": "mem-1"}))
 
     def test_update_memory_content(self) -> None:
         """Test updating memory content."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.update_memory",
+                "deepalpha.trading_tools.memory.basement_client.update_memory",
                 new_callable=AsyncMock,
                 return_value={"id": "mem-1"},
             ) as mock_update,
@@ -217,9 +217,9 @@ class TestUpdateMemory:
     def test_update_memory_multiple_fields(self) -> None:
         """Test updating multiple fields at once."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.update_memory",
+                "deepalpha.trading_tools.memory.basement_client.update_memory",
                 new_callable=AsyncMock,
                 return_value={"id": "mem-1"},
             ),
@@ -241,9 +241,9 @@ class TestUpdateMemory:
     def test_update_memory_api_failure(self) -> None:
         """Test that update_memory raises on API failure."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.update_memory",
+                "deepalpha.trading_tools.memory.basement_client.update_memory",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
@@ -257,16 +257,16 @@ class TestDeleteMemory:
 
     def test_delete_memory_no_auth(self) -> None:
         """Test that delete_memory raises when not authenticated."""
-        with patch("embient.trading_tools.memory.get_jwt_token", return_value=None):
+        with patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=None):
             with pytest.raises(ToolException, match="Not authenticated"):
                 asyncio.run(delete_memory.ainvoke({"memory_id": "mem-1"}))
 
     def test_delete_memory_success(self) -> None:
         """Test successful memory deletion."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.delete_memory",
+                "deepalpha.trading_tools.memory.basement_client.delete_memory",
                 new_callable=AsyncMock,
                 return_value=True,
             ) as mock_delete,
@@ -279,9 +279,9 @@ class TestDeleteMemory:
     def test_delete_memory_api_failure(self) -> None:
         """Test that delete_memory raises on API failure."""
         with (
-            patch("embient.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
+            patch("deepalpha.trading_tools.memory.get_jwt_token", return_value=MOCK_TOKEN),
             patch(
-                "embient.trading_tools.memory.basement_client.delete_memory",
+                "deepalpha.trading_tools.memory.basement_client.delete_memory",
                 new_callable=AsyncMock,
                 return_value=False,
             ),

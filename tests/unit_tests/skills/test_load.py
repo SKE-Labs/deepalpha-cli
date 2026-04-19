@@ -5,13 +5,13 @@ from unittest.mock import patch
 
 import pytest
 
-from embient.skills.load import list_skills
+from deepalpha.skills.load import list_skills
 
 
 @pytest.fixture(autouse=True)
 def _no_builtin_skills(tmp_path: Path):
     """Prevent built-in skills from interfering with test assertions."""
-    with patch("embient.skills.load.BUILT_IN_SKILLS_DIR", tmp_path / "no_builtins"):
+    with patch("deepalpha.skills.load.BUILT_IN_SKILLS_DIR", tmp_path / "no_builtins"):
         yield
 
 
@@ -308,13 +308,13 @@ class TestListSkillsBuiltIn:
     def test_built_in_skills_loaded(self) -> None:
         """Test that built-in skills are loaded when no user/project dirs given."""
         # Remove the autouse mock to test real built-in loading
-        from embient.skills.load import BUILT_IN_SKILLS_DIR, list_skills as real_list_skills
+        from deepalpha.skills.load import BUILT_IN_SKILLS_DIR, list_skills as real_list_skills
 
         if not BUILT_IN_SKILLS_DIR.exists():
             pytest.skip("No built-in skills directory")
 
         # Call directly without the autouse patch
-        with patch("embient.skills.load.BUILT_IN_SKILLS_DIR", BUILT_IN_SKILLS_DIR):
+        with patch("deepalpha.skills.load.BUILT_IN_SKILLS_DIR", BUILT_IN_SKILLS_DIR):
             skills = real_list_skills(user_skills_dir=None, project_skills_dir=None)
 
         builtin_names = {s["name"] for s in skills if s["source"] == "built-in"}
@@ -346,7 +346,7 @@ description: User version
 Content
 """)
 
-        with patch("embient.skills.load.BUILT_IN_SKILLS_DIR", builtin_dir):
+        with patch("deepalpha.skills.load.BUILT_IN_SKILLS_DIR", builtin_dir):
             skills = list_skills(user_skills_dir=user_dir, project_skills_dir=None)
 
         # User version should win

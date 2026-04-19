@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from embient.spawns.models import SpawnRecord, SpawnRunRecord
-from embient.spawns.store import SpawnStore
+from deepalpha.spawns.models import SpawnRecord, SpawnRunRecord
+from deepalpha.spawns.store import SpawnStore
 
 
 @pytest.fixture

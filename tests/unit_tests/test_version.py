@@ -5,7 +5,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from embient._version import __version__
+from deepalpha._version import __version__
 
 
 def test_version_matches_pyproject() -> None:
@@ -28,28 +28,28 @@ def test_version_matches_pyproject() -> None:
 def test_cli_version_flag() -> None:
     """Verify that --version flag outputs the correct version."""
     result = subprocess.run(
-        [sys.executable, "-m", "embient.main", "--version"],
+        [sys.executable, "-m", "deepalpha.main", "--version"],
         capture_output=True,
         text=True,
         check=False,
     )
     # argparse exits with 0 for --version
     assert result.returncode == 0
-    assert f"embient {__version__}" in result.stdout
+    assert f"deepalpha {__version__}" in result.stdout
 
 
 def test_version_slash_command_message_format() -> None:
     """Verify the /version slash command message format matches expected output."""
     # This tests the exact message format used in app.py's _handle_command for /version
-    expected_message = f"embient version: {__version__}"
-    assert "embient version:" in expected_message
+    expected_message = f"deepalpha version: {__version__}"
+    assert "deepalpha version:" in expected_message
     assert __version__ in expected_message
 
 
 def test_help_mentions_version_flag() -> None:
     """Verify that the CLI help text mentions --version."""
     result = subprocess.run(
-        [sys.executable, "-m", "embient.main", "help"],
+        [sys.executable, "-m", "deepalpha.main", "help"],
         capture_output=True,
         text=True,
         check=False,

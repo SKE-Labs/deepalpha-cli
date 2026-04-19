@@ -2,7 +2,7 @@
 
 import pytest
 
-from embient.model_config import _PROVIDER_ENV_VARS, get_available_models, has_provider_credentials
+from deepalpha.model_config import _PROVIDER_ENV_VARS, get_available_models, has_provider_credentials
 
 
 class TestGetAvailableModels:

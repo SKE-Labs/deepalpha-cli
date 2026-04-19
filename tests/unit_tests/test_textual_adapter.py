@@ -1,6 +1,6 @@
 """Unit tests for textual_adapter functions."""
 
-from embient.textual_adapter import _is_summarization_chunk
+from deepalpha.textual_adapter import _is_summarization_chunk
 
 
 class TestIsSummarizationChunk:

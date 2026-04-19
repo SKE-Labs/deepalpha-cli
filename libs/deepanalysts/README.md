@@ -22,7 +22,7 @@ Deep Analysts provides a complete middleware stack for LangChain agents:
 - **Backends**: Store (LangGraph BaseStore), Sandbox (subprocess execution), Composite (path-based routing)
 - **API Integration**: Basement client for syncing skills/memories to cloud
 
-Uses only langchain, langgraph, and standard libraries (no external embient dependencies).
+Uses only langchain, langgraph, and standard libraries (no external deepalpha dependencies).
 
 ## Usage
 
@@ -161,7 +161,7 @@ middleware_stack = [
 from deepanalysts.clients import BasementClient
 
 client = BasementClient(
-    base_url="https://basement.embient.ai",
+    base_url="https://basement.deepalpha.mn",
     token="jwt-token",
 )
 

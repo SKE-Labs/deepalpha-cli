@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from embient.widgets.autocomplete import (
+from deepalpha.widgets.autocomplete import (
     MAX_SUGGESTIONS,
     SLASH_COMMANDS,
     FuzzyFileController,

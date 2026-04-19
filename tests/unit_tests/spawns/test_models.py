@@ -1,6 +1,6 @@
 """Unit tests for spawn data models — SpawnRecord, SpawnRunRecord."""
 
-from embient.spawns.models import SpawnRecord, SpawnRunRecord, _new_id
+from deepalpha.spawns.models import SpawnRecord, SpawnRunRecord, _new_id
 
 
 class TestNewId:

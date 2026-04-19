@@ -44,8 +44,8 @@ run:
 # Define a variable for Python and notebook files.
 PYTHON_FILES=.
 lint format: PYTHON_FILES=.
-lint_diff format_diff: PYTHON_FILES=$(shell git diff --relative=embient-cli --name-only --diff-filter=d master | grep -E '\.py$$|\.ipynb$$')
-lint_package: PYTHON_FILES=embient
+lint_diff format_diff: PYTHON_FILES=$(shell git diff --relative=deepalpha-cli --name-only --diff-filter=d master | grep -E '\.py$$|\.ipynb$$')
+lint_package: PYTHON_FILES=deepalpha
 lint_tests: PYTHON_FILES=tests
 
 lint lint_diff lint_package lint_tests:
@@ -57,7 +57,7 @@ format format_diff:
 	[ "$(PYTHON_FILES)" = "" ] || uv run --all-groups ruff format $(PYTHON_FILES)
 	[ "$(PYTHON_FILES)" = "" ] || uv run --all-groups ruff check --fix $(PYTHON_FILES)
 
-check_imports: $(shell find embient -name '*.py')
+check_imports: $(shell find deepalpha -name '*.py')
 	uv run --all-groups python ./scripts/check_imports.py $^
 
 ######################

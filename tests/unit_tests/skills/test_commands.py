@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from embient.skills.commands import _validate_name, _validate_skill_path
+from deepalpha.skills.commands import _validate_name, _validate_skill_path
 
 
 class TestValidateSkillName:

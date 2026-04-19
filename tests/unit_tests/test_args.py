@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import patch
 
-from embient.main import parse_args
+from deepalpha.main import parse_args
 
 
 class TestInitialPromptArg:
@@ -11,31 +11,31 @@ class TestInitialPromptArg:
 
     def test_short_flag(self) -> None:
         """Verify -m sets initial_prompt."""
-        with patch.object(sys, "argv", ["embient", "-m", "hello world"]):
+        with patch.object(sys, "argv", ["deepalpha", "-m", "hello world"]):
             args = parse_args()
         assert args.initial_prompt == "hello world"
 
     def test_long_flag(self) -> None:
         """Verify --message sets initial_prompt."""
-        with patch.object(sys, "argv", ["embient", "--message", "hello world"]):
+        with patch.object(sys, "argv", ["deepalpha", "--message", "hello world"]):
             args = parse_args()
         assert args.initial_prompt == "hello world"
 
     def test_no_flag(self) -> None:
         """Verify initial_prompt is None when not provided."""
-        with patch.object(sys, "argv", ["embient"]):
+        with patch.object(sys, "argv", ["deepalpha"]):
             args = parse_args()
         assert args.initial_prompt is None
 
     def test_with_other_args(self) -> None:
         """Verify -m works alongside other arguments."""
-        with patch.object(sys, "argv", ["embient", "--agent", "myagent", "-m", "do something"]):
+        with patch.object(sys, "argv", ["deepalpha", "--agent", "myagent", "-m", "do something"]):
             args = parse_args()
         assert args.initial_prompt == "do something"
         assert args.agent == "myagent"
 
     def test_empty_string(self) -> None:
         """Verify empty string is accepted."""
-        with patch.object(sys, "argv", ["embient", "-m", ""]):
+        with patch.object(sys, "argv", ["deepalpha", "-m", ""]):
             args = parse_args()
         assert args.initial_prompt == ""

@@ -6,13 +6,13 @@ from unittest.mock import MagicMock, patch
 
 from PIL import Image
 
-from embient.image_utils import (
+from deepalpha.image_utils import (
     ImageData,
     create_multimodal_content,
     encode_image_to_base64,
     get_clipboard_image,
 )
-from embient.input import ImageTracker
+from deepalpha.input import ImageTracker
 
 
 class TestImageData:
@@ -200,22 +200,22 @@ class TestCreateMultimodalContent:
 class TestGetClipboardImage:
     """Tests for clipboard image detection."""
 
-    @patch("embient.image_utils.sys.platform", "linux")
+    @patch("deepalpha.image_utils.sys.platform", "linux")
     def test_unsupported_platform_returns_none(self) -> None:
         """Test that non-macOS platforms return None."""
         result = get_clipboard_image()
         assert result is None
 
-    @patch("embient.image_utils.sys.platform", "darwin")
-    @patch("embient.image_utils._get_macos_clipboard_image")
+    @patch("deepalpha.image_utils.sys.platform", "darwin")
+    @patch("deepalpha.image_utils._get_macos_clipboard_image")
     def test_macos_calls_macos_function(self, mock_macos_fn: MagicMock) -> None:
         """Test that macOS platform calls the macOS-specific function."""
         mock_macos_fn.return_value = None
         get_clipboard_image()
         mock_macos_fn.assert_called_once()
 
-    @patch("embient.image_utils.sys.platform", "darwin")
-    @patch("embient.image_utils.subprocess.run")
+    @patch("deepalpha.image_utils.sys.platform", "darwin")
+    @patch("deepalpha.image_utils.subprocess.run")
     def test_pngpaste_success(self, mock_run: MagicMock) -> None:
         """Test successful image retrieval via pngpaste."""
         # Create a small valid PNG
@@ -235,8 +235,8 @@ class TestGetClipboardImage:
         assert result.format == "png"
         assert len(result.base64_data) > 0
 
-    @patch("embient.image_utils.sys.platform", "darwin")
-    @patch("embient.image_utils.subprocess.run")
+    @patch("deepalpha.image_utils.sys.platform", "darwin")
+    @patch("deepalpha.image_utils.subprocess.run")
     def test_pngpaste_not_installed_falls_back(self, mock_run: MagicMock) -> None:
         """Test fallback to osascript when pngpaste is not installed."""
         # First call (pngpaste) raises FileNotFoundError
@@ -253,9 +253,9 @@ class TestGetClipboardImage:
         # Should have tried both methods
         assert mock_run.call_count == 2
 
-    @patch("embient.image_utils.sys.platform", "darwin")
-    @patch("embient.image_utils._get_clipboard_via_osascript")
-    @patch("embient.image_utils.subprocess.run")
+    @patch("deepalpha.image_utils.sys.platform", "darwin")
+    @patch("deepalpha.image_utils._get_clipboard_via_osascript")
+    @patch("deepalpha.image_utils.subprocess.run")
     def test_no_image_in_clipboard(self, mock_run: MagicMock, mock_osascript: MagicMock) -> None:
         """Test behavior when clipboard has no image."""
         # pngpaste fails

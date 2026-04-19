@@ -88,9 +88,9 @@ os.makedirs(parent_dir, exist_ok=True)
 
 with open(file_path, 'w') as f:
     f.write(content)
-" <<'__EMBIENT_EOF__'
+" <<'__DEEPALPHA_EOF__'
 {payload_b64}
-__EMBIENT_EOF__"""
+__DEEPALPHA_EOF__"""
 
 # Use heredoc to pass edit parameters via stdin to avoid ARG_MAX limits.
 # Stdin format: base64-encoded JSON with {{"path": str, "old": str, "new": str}}.
@@ -146,9 +146,9 @@ with open(file_path, 'w') as f:
     f.write(result)
 
 print(count)
-" <<'__EMBIENT_EOF__'
+" <<'__DEEPALPHA_EOF__'
 {payload_b64}
-__EMBIENT_EOF__"""
+__DEEPALPHA_EOF__"""
 
 _READ_COMMAND_TEMPLATE = """python3 -c "
 import os

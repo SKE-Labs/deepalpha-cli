@@ -1,7 +1,7 @@
 """Basement API client for skills and memories.
 
 This provides a generic client interface that can be configured for either
-cloud (park) or local (embient-cli) usage.
+cloud (park) or local (deepalpha-cli) usage.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # Default API endpoint (can be overridden via BASEMENT_API env var)
-DEFAULT_BASEMENT_API = os.environ.get("BASEMENT_API", "https://basement.embient.ai")
+DEFAULT_BASEMENT_API = os.environ.get("BASEMENT_API", "https://basement.deepalpha.mn")
 
 
 @runtime_checkable
@@ -52,7 +52,7 @@ class BasementClient:
         """Initialize the client.
 
         Args:
-            base_url: API base URL (defaults to basement.embient.ai)
+            base_url: API base URL (defaults to basement.deepalpha.mn)
             token: Static JWT token to use
             token_provider: Callable that returns JWT token dynamically
             timeout: Request timeout in seconds

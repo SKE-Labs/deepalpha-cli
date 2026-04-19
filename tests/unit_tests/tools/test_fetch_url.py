@@ -3,7 +3,7 @@
 import requests
 import responses
 
-from embient.tools import fetch_url
+from deepalpha.tools import fetch_url
 
 
 @responses.activate

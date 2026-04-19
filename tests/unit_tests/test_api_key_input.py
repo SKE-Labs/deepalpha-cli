@@ -1,4 +1,4 @@
-"""Unit tests for _save_api_key() — persisting API keys to ~/.embient/.env."""
+"""Unit tests for _save_api_key() — persisting API keys to ~/.deepalpha/.env."""
 
 import os
 import stat
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from embient.widgets.api_key_input import _save_api_key
+from deepalpha.widgets.api_key_input import _save_api_key
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def fake_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def _env_path(fake_home: Path) -> Path:
-    return fake_home / ".embient" / ".env"
+    return fake_home / ".deepalpha" / ".env"
 
 
 class TestSaveApiKey:

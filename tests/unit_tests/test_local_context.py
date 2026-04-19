@@ -4,13 +4,13 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from embient.local_context import LocalContextMiddleware
+from deepalpha.local_context import LocalContextMiddleware
 
 
 class TestLocalContextMiddleware:
     """Test git context middleware functionality."""
 
-    @patch("embient.local_context.subprocess.run")
+    @patch("deepalpha.local_context.subprocess.run")
     def test_get_git_info_in_git_repo(self, mock_run) -> None:
         """Test git info gathering when in a git repository."""
         # Mock git rev-parse response (current branch)
@@ -34,7 +34,7 @@ class TestLocalContextMiddleware:
         assert "master" in git_info["main_branches"]
         assert len(git_info["main_branches"]) == 2
 
-    @patch("embient.local_context.subprocess.run")
+    @patch("deepalpha.local_context.subprocess.run")
     def test_get_git_info_not_in_git_repo(self, mock_run) -> None:
         """Test git info returns empty dict when not in a git repository."""
         # Mock git rev-parse failure (not a git repo)
@@ -47,7 +47,7 @@ class TestLocalContextMiddleware:
 
         assert git_info == {}
 
-    @patch("embient.local_context.subprocess.run")
+    @patch("deepalpha.local_context.subprocess.run")
     def test_get_git_info_only_main_branch(self, mock_run) -> None:
         """Test git info when only main branch exists."""
         mock_branch_result = Mock()
@@ -66,7 +66,7 @@ class TestLocalContextMiddleware:
         assert git_info["branch"] == "main"
         assert git_info["main_branches"] == ["main"]
 
-    @patch("embient.local_context.subprocess.run")
+    @patch("deepalpha.local_context.subprocess.run")
     def test_get_git_info_only_master_branch(self, mock_run) -> None:
         """Test git info when only master branch exists."""
         mock_branch_result = Mock()
@@ -85,7 +85,7 @@ class TestLocalContextMiddleware:
         assert git_info["branch"] == "master"
         assert git_info["main_branches"] == ["master"]
 
-    @patch("embient.local_context.subprocess.run")
+    @patch("deepalpha.local_context.subprocess.run")
     def test_get_git_info_no_main_branches(self, mock_run) -> None:
         """Test git info when neither main nor master exist."""
         mock_branch_result = Mock()
@@ -104,7 +104,7 @@ class TestLocalContextMiddleware:
         assert git_info["branch"] == "develop"
         assert git_info["main_branches"] == []
 
-    @patch("embient.local_context.subprocess.run")
+    @patch("deepalpha.local_context.subprocess.run")
     def test_before_agent_with_git_repo(
         self, mock_run: Mock, tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -146,7 +146,7 @@ class TestLocalContextMiddleware:
         assert "`main`" in result["local_context"]
         assert "`master`" in result["local_context"]
 
-    @patch("embient.local_context.subprocess.run")
+    @patch("deepalpha.local_context.subprocess.run")
     def test_before_agent_not_in_git_repo(
         self, mock_run: Mock, tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
     ) -> None:

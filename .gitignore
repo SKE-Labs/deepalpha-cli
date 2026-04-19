@@ -72,9 +72,9 @@ Thumbs.db
 *.key
 credentials.json
 
-# Embient specific
-.embient/
-~/.embient/
+# DeepAlpha specific
+.deepalpha/
+~/.deepalpha/
 
 # Local development
 *.local

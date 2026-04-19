@@ -2,7 +2,7 @@
 
 import pytest
 
-from embient.spawns.prompts import get_spawn_prompt
+from deepalpha.spawns.prompts import get_spawn_prompt
 
 
 class TestGetSpawnPrompt:

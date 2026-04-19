@@ -1,6 +1,6 @@
 """Tests for TextualTokenTracker."""
 
-from embient.app import TextualTokenTracker
+from deepalpha.app import TextualTokenTracker
 
 
 class TestTextualTokenTracker:

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from langchain_core.messages import ToolMessage
 
-from embient.file_ops import FileOpTracker, build_approval_preview
+from deepalpha.file_ops import FileOpTracker, build_approval_preview
 
 
 def test_tracker_records_read_lines(tmp_path: Path) -> None:

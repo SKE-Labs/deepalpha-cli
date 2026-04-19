@@ -2,8 +2,8 @@
 
 from datetime import UTC, datetime, time as dt_time, timedelta
 
-from embient.spawns.models import SpawnRecord
-from embient.spawns.schedule import (
+from deepalpha.spawns.models import SpawnRecord
+from deepalpha.spawns.schedule import (
     _parse_time,
     compute_backoff_next_run,
     compute_initial_next_run,

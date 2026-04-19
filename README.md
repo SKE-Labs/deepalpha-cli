@@ -1,10 +1,10 @@
-# Embient CLI
+# DeepAlpha CLI
 
 <p align="center">
-  <img src="banner.png" alt="Embient CLI" width="100%" />
+  <img src="banner.png" alt="DeepAlpha CLI" width="100%" />
 </p>
 
-Embient CLI is an AI-powered trading assistant that runs in your terminal. It combines a multi-agent orchestration system (Deep Analysts) with trading tools, autonomous background agents (Spawns), and BYOK model support to help you analyze markets and manage positions.
+DeepAlpha CLI is an AI-powered trading assistant that runs in your terminal. It combines a multi-agent orchestration system (Deep Analysts) with trading tools, autonomous background agents (Spawns), and BYOK model support to help you analyze markets and manage positions.
 
 **Key Capabilities:**
 
@@ -19,32 +19,32 @@ Embient CLI is an AI-powered trading assistant that runs in your terminal. It co
 
 ```bash
 uv sync                 # Install dependencies
-uv run embient login    # Authenticate via browser OAuth
-uv run embient          # Launch interactive TUI
+uv run deepalpha login    # Authenticate via browser OAuth
+uv run deepalpha          # Launch interactive TUI
 ```
 
 ### CLI Options
 
 ```bash
-uv run embient -m "Analyze BTC/USDT"     # Auto-submit a prompt
-uv run embient -r                         # Resume most recent thread
-uv run embient -r <thread_id>             # Resume specific thread
-uv run embient --model claude-sonnet-4-5-20250929  # Override model
-uv run embient --auto-approve             # Skip HITL confirmations
-uv run embient --pipe -m "..."            # Non-interactive, stream to stdout
-uv run embient --sandbox modal            # Remote sandbox execution
+uv run deepalpha -m "Analyze BTC/USDT"     # Auto-submit a prompt
+uv run deepalpha -r                         # Resume most recent thread
+uv run deepalpha -r <thread_id>             # Resume specific thread
+uv run deepalpha --model claude-sonnet-4-5-20250929  # Override model
+uv run deepalpha --auto-approve             # Skip HITL confirmations
+uv run deepalpha --pipe -m "..."            # Non-interactive, stream to stdout
+uv run deepalpha --sandbox modal            # Remote sandbox execution
 ```
 
 ### Management Commands
 
 ```bash
-uv run embient status                     # Auth status
-uv run embient logout                     # Clear credentials
-uv run embient list                       # List agents
-uv run embient threads list               # List conversation threads
-uv run embient threads delete <id>        # Delete a thread
-uv run embient spawns list                # List local spawns
-uv run embient skills                     # List installed skills
+uv run deepalpha status                     # Auth status
+uv run deepalpha logout                     # Clear credentials
+uv run deepalpha list                       # List agents
+uv run deepalpha threads list               # List conversation threads
+uv run deepalpha threads delete <id>        # Delete a thread
+uv run deepalpha spawns list                # List local spawns
+uv run deepalpha skills                     # List installed skills
 ```
 
 ### Interactive Commands
@@ -124,20 +124,20 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export GOOGLE_API_KEY=AIza...
 ```
 
-Keys can also be set in a project `.env` file or in `~/.embient/.env` (user-global). When switching models via `/model`, you'll be prompted to paste the key if missing.
+Keys can also be set in a project `.env` file or in `~/.deepalpha/.env` (user-global). When switching models via `/model`, you'll be prompted to paste the key if missing.
 
 ### Trading Defaults
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `EMBIENT_DEFAULT_SYMBOL` | Default ticker | `BTC/USDT` |
-| `EMBIENT_DEFAULT_EXCHANGE` | Exchange | `binance` |
-| `EMBIENT_DEFAULT_INTERVAL` | Candle timeframe | `4h` |
+| `DEEPALPHA_DEFAULT_SYMBOL` | Default ticker | `BTC/USDT` |
+| `DEEPALPHA_DEFAULT_EXCHANGE` | Exchange | `binance` |
+| `DEEPALPHA_DEFAULT_INTERVAL` | Candle timeframe | `4h` |
 
 ### Tracing (optional)
 
 ```bash
-export EMBIENT_LANGSMITH_PROJECT=embient-cli
+export DEEPALPHA_LANGSMITH_PROJECT=deepalpha-cli
 export LANGCHAIN_API_KEY=...
 ```
 

@@ -1,6 +1,6 @@
 """Unit tests for position sizing — pure calculation logic."""
 
-from embient.trading_tools.signals.position_sizing import (
+from deepalpha.trading_tools.signals.position_sizing import (
     _round_quantity,
     calculate_position_sizing,
 )

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from embient import sessions
+from deepalpha import sessions
 
 
 class TestGenerateThreadId:
@@ -237,7 +237,7 @@ class TestTextualSessionState:
 
     def test_stores_provided_thread_id(self):
         """TextualSessionState stores provided thread_id."""
-        from embient.app import TextualSessionState
+        from deepalpha.app import TextualSessionState
 
         tid = sessions.generate_thread_id()
         state = TextualSessionState(thread_id=tid)
@@ -245,7 +245,7 @@ class TestTextualSessionState:
 
     def test_generates_id_if_none(self):
         """TextualSessionState generates ID if none provided."""
-        from embient.app import TextualSessionState
+        from deepalpha.app import TextualSessionState
 
         state = TextualSessionState(thread_id=None)
         assert state.thread_id is not None
@@ -253,7 +253,7 @@ class TestTextualSessionState:
 
     def test_reset_thread(self):
         """reset_thread generates a new thread ID."""
-        from embient.app import TextualSessionState
+        from deepalpha.app import TextualSessionState
 
         state = TextualSessionState(thread_id="original")
         old_id = state.thread_id

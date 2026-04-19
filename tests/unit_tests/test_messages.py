@@ -2,7 +2,7 @@
 
 import pytest
 
-from embient.widgets.messages import (
+from deepalpha.widgets.messages import (
     ErrorMessage,
     SystemMessage,
     ToolCallMessage,

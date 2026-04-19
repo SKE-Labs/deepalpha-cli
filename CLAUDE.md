@@ -1,207 +1,107 @@
-# Embient CLI — Terminal AI Trading Assistant
+# DeepAlpha CLI — Terminal AI Trading Assistant
 
-Python + Textual terminal app. Deep Analysts multi-agent orchestration with BYOK model support (OpenAI, Anthropic, Google). Connects to Basement (market data, signals) and Park (search, news, fundamentals).
+Python + Textual terminal app. Deep Analysts multi-agent orchestration with BYOK LLM keys (OpenAI, Anthropic, Google, plus GitHub Copilot / Codex / Gemini CLI routing). Connects to Basement (market data, signals, memories) and Park (search, news, fundamentals).
 
 ## Commands
 
 ```bash
-uv sync                  # Install
-uv run embient           # Interactive mode
-uv run embient login     # Browser-based OAuth
-uv run embient logout    # Clear credentials
-uv run embient status    # Auth status
-
-# Model override (auto-detects provider from name)
-uv run embient --model gpt-5-mini
-uv run embient --model claude-sonnet-4-5-20250929
-uv run embient --model gemini-3-flash-preview
-
-# Resume session
-uv run embient -r              # Most recent thread
-uv run embient -r <thread_id>  # Specific thread
-
-# Auto-submit + non-interactive
-uv run embient -m "Analyze BTC/USDT"
-uv run embient --pipe -m "..."   # Stream to stdout
-uv run embient --auto-approve    # Skip HITL prompts
-
-# Remote sandbox
-uv run embient --sandbox modal|daytona|runloop
-
-# Agent/thread management
-uv run embient list
-uv run embient threads list [--agent NAME --limit N]
-uv run embient threads delete <id>
-uv run embient skills
-
-# Testing & linting
-make test          # Unit tests (--disable-socket)
-make lint          # Ruff check + format diff
-make format        # Auto-fix
-make coverage      # Coverage report
+uv sync                             # Install
+uv run deepalpha                    # Interactive mode
+uv run deepalpha login              # Browser OAuth via Basement
+uv run deepalpha --model <name>     # Override model (provider auto-detected)
+uv run deepalpha -r [<thread_id>]   # Resume most recent / specific thread
+uv run deepalpha -m "…"             # Auto-submit a prompt
+uv run deepalpha --pipe -m "…"      # Non-interactive, stream to stdout
+uv run deepalpha --auto-approve     # Skip HITL prompts
+uv run deepalpha --sandbox modal|daytona|runloop
+uv run deepalpha threads list|delete
+uv run deepalpha skills
+uv run deepalpha auth copilot|codex|gemini
+make test && make lint              # Pytest (--disable-socket) + Ruff
 ```
 
 ## Architecture
 
-### Agent System
+### Agent system
 
-`create_cli_agent()` in `embient/agent.py` builds the Deep Analysts supervisor via `create_deep_analysts()` in `embient/analysts/graph.py`.
+`create_cli_agent()` in `deepalpha/agent.py` → `create_deep_analysts()` in `deepalpha/analysts/graph.py`.
 
-**Orchestrator middleware stack** (order matters):
-1. ToolErrorHandling → 2. TodoList → 3. Memory → 4. Skills → 5. Filesystem → 6. SubAgent → 7. PatchToolCalls → 8. HumanInTheLoop
+Orchestrator middleware (order matters):
+1. `ToolErrorHandlingMiddleware`
+2. `TodoListMiddleware`
+3. `SummarizationMiddleware` — trigger `("tokens", 100_000)`, keep `("messages", 20)`, arg-truncation over 20-message window at 2000 chars
+4. `MemoryMiddleware` *(if memory configured)*
+5. `SkillsMiddleware` *(if skills configured)*
+6. `FilesystemMiddleware`
+7. `SubAgentMiddleware` (technical / fundamental subagents)
+8. `PatchToolCallsMiddleware`
+9. `HumanInTheLoopMiddleware` — interrupts on signal CRUD and spawn creation (see HITL below)
 
-**Subagents:**
+Subagent middleware: `ToolErrorHandling → Skills? → Filesystem → PatchToolCalls`.
 
-| Agent | Tools | HITL |
-|-------|-------|------|
-| `technical_analyst` | analyze_chart, get_latest_candle, get_indicator, get_candles_around_date | None |
-| `fundamental_analyst` | get_financial_news, get_fundamentals, get_economics_calendar | None |
+**Subagents** live in `deepalpha/analysts/` (`technical_analyst`, `fundamental_analyst`). Signal management tools stay on the orchestrator, not delegated.
 
-Signal management tools are on the supervisor (not a separate subagent).
+Middleware library: `deepanalysts >= 0.2.0` (PyPI). Local dev path in `libs/deepanalysts/` — uncomment the `[tool.uv.sources]` block in `pyproject.toml` to use it.
 
-**Subagent middleware:** ToolErrorHandling → Skills (filtered) → Filesystem → PatchToolCalls
+### BYOK models
 
-**Middleware library:** `deepanalysts>=0.1.9` (PyPI, local dev in `libs/deepanalysts/`)
-
-### BYOK Model Support
-
-Auto-detected from API key priority: `OPENAI_API_KEY` → `ANTHROPIC_API_KEY` → `GOOGLE_API_KEY`.
-Override: `--model NAME` or env vars `OPENAI_MODEL`, `ANTHROPIC_MODEL`, `GOOGLE_MODEL`.
+Provider auto-detected by which API key is set, with priority `OPENAI_API_KEY → ANTHROPIC_API_KEY → GOOGLE_API_KEY`. Override via `--model <name>` (provider inferred from name) or `OPENAI_MODEL` / `ANTHROPIC_MODEL` / `GOOGLE_MODEL`.
 
 Defaults: `gpt-5-mini` (OpenAI), `claude-sonnet-4-5-20250929` (Anthropic), `gemini-3-flash-preview` (Google).
 
-### Auth Flow
+### Auth flow
 
-1. `embient login` opens browser to Basement OAuth
-2. User authenticates, CLI receives auth code
-3. Token stored in `~/.embient/credentials.json` (mode 0o600)
-4. All API calls include token in Authorization header
+1. `deepalpha login` opens a browser to Basement's OAuth device flow.
+2. CLI receives the auth code, persists the session token to `~/.deepalpha/credentials.json` (mode `0o600`).
+3. Every Basement/Park call attaches the token; Park validates it against Basement with a 5-minute cache.
 
 ### HITL
 
-Signal creation/update/close/cancel and spawn creation require user approval via `ApprovalMenu` widget. Use `--auto-approve` to skip.
+`HumanInTheLoopMiddleware` interrupts on: `create_trading_insight`, `update_trading_insight`, `close_position`, `cancel_signal`, `create_spawn`. The `ApprovalMenu` widget renders the decision. `--auto-approve` bypasses — don't enable unattended unless you trust the prompt.
 
-## Tools
+### Local spawns (BYOK background agents)
 
-**Trading Tools** (`embient/trading_tools/`):
+Spawns are autonomous agents that run locally with the user's own API keys — everything in `deepalpha/spawns/`:
 
-| Tool | Source | Purpose |
-|------|--------|---------|
-| `get_latest_candle` | Basement | Current 5m price |
-| `get_candles_around_date` | Basement | Historical candles |
-| `get_indicator` | Basement | RSI, MACD, EMA, SMA, BB, etc. |
-| `analyze_chart` | Basement→Vermeer | Chart image |
-| `web_search` | Park (Brave) | General web search |
-| `get_financial_news` | Park | Trusted source news |
-| `get_fundamentals` | Park (TwelveData) | Stock fundamentals |
-| `get_economics_calendar` | Basement | Economic events |
-| `get_user_watchlist` | Basement | User's favorite tickers |
-| `get_user_trading_insights` | Basement | List signals |
-| `create_trading_insight` | Basement | Create signal (HITL) |
-| `update_trading_insight` | Basement | Update signal (HITL) |
-| `close_position` | Basement | Close executed position (HITL) |
-| `cancel_signal` | Basement | Cancel unexecuted signal (HITL) |
-| `get_portfolio_summary` | Basement | Account balance, positions, P&L |
-| `calculate_position_size` | Local | Risk-based sizing |
-| `send_notification` | Basement | Push/email notification |
-| `list_memories` | Basement | List memories |
-| `create_memory` | Basement | Create memory |
-| `update_memory` | Basement | Update memory |
-| `delete_memory` | Basement | Delete memory |
-| `create_spawn` | Local | Create autonomous spawn (HITL) |
-| `list_spawns` | Local | List local spawns |
-| `update_spawn` | Local | Pause/resume/update spawn |
-| `cancel_spawn` | Local | Cancel spawn permanently |
-| `get_spawn_runs` | Local | View spawn run history |
+- `manager.py` — top-level lifecycle + CRUD.
+- `store.py` — SQLite persistence at `~/.deepalpha/sessions.db`.
+- `scheduler.py` — asyncio polling loop (30s tick).
+- `executor.py` — agent creation with timeout/backoff.
+- `agent_factory.py` — restricted agent per spawn type.
 
-**General Tools** (`embient/tools.py`): `http_request`, `fetch_url`
+Spawn types: `monitoring` (position management) and `task` (analysis/research). Schedule types: `once`, `interval` (minutes), `cron` (5-field; requires `croniter`). Spawn agents have **no HITL**, **no SubAgent delegation**, and filtered tool access.
 
-### Local Spawns (BYOK)
+### Tools
 
-Spawns are autonomous background agents that run locally using the user's own API keys. The spawn system consists of:
+Under `deepalpha/trading_tools/` grouped by `market_data/`, `research/`, `signals/`, `memory.py`, `spawns.py`. General HTTP helpers in `deepalpha/tools.py`. Each `@tool` uses a Pydantic schema and pulls the session token from `context.py` ContextVars.
 
-- **SpawnManager** (`embient/spawns/manager.py`): Top-level orchestrator
-- **SpawnStore** (`embient/spawns/store.py`): SQLite persistence (in `~/.embient/sessions.db`)
-- **SpawnScheduler** (`embient/spawns/scheduler.py`): Asyncio polling loop (30s interval)
-- **SpawnExecutor** (`embient/spawns/executor.py`): Agent creation + execution with timeout/backoff
-- **Spawn Agent Factory** (`embient/spawns/agent_factory.py`): Restricted agents per spawn type
+## Interactive slash-commands
 
-Spawn types: `monitoring` (position management) and `task` (analysis/research).
-Schedule types: `once`, `interval` (minutes), `cron` (5-field expression, requires `croniter`).
-Spawn agents have no HITL, no SubAgent delegation, and filtered tool access.
-
-## Key Files
-
-```
-embient/
-├── main.py              # CLI entry point, argument parsing
-├── agent.py             # Agent factory (create_cli_agent)
-├── auth.py              # OAuth login/logout/status
-├── context.py           # ContextVars (auth_token, thread_id, user_profile, images)
-├── config.py            # Settings, model creation, color scheme
-├── model_config.py      # Model discovery by provider
-├── trading_config.py    # TradingConfig (exchange, interval, position size, leverage)
-├── sessions.py          # SQLite checkpointer (~/.embient/sessions.db)
-├── app.py               # Textual UI application
-├── non_interactive.py   # Pipe mode (--pipe, --quiet)
-├── analysts/
-│   ├── graph.py         # create_deep_analysts() + middleware stack
-│   ├── technical.py     # Technical analyst subagent
-│   └── fundamental.py   # Fundamental analyst subagent
-├── spawns/
-│   ├── models.py        # SpawnRecord, SpawnRunRecord dataclasses
-│   ├── store.py         # SQLite CRUD for spawns and runs
-│   ├── manager.py       # SpawnManager (lifecycle + CRUD API)
-│   ├── scheduler.py     # Asyncio polling scheduler
-│   ├── executor.py      # Agent execution with timeout/backoff
-│   ├── agent_factory.py # create_spawn_agent() restricted agent
-│   ├── prompts.py       # Monitoring + task spawn prompts
-│   └── schedule.py      # Cron/interval/once schedule calculations
-├── clients/
-│   ├── basement.py      # Basement API (market data, signals, memories, charts)
-│   └── park.py          # Park API (search, news, fundamentals)
-├── trading_tools/       # @tool decorated LangChain tools
-│   ├── market_data/     # Candles, indicators, charts
-│   ├── research/        # News, fundamentals, economics, watchlist
-│   ├── signals/         # Signal CRUD, position sizing, position management, portfolio
-│   ├── memory.py        # Memory CRUD
-│   └── spawns.py        # Spawn management tools (create, list, update, cancel)
-├── integrations/        # Sandbox providers (modal, daytona, runloop)
-├── skills/              # Skills loading + CLI commands
-├── widgets/             # Textual UI components (14 widgets)
-└── utils/
-libs/deepanalysts/       # Middleware & backend library (v0.1.10, PyPI)
-```
-
-## Interactive Commands
-
-`/clear`, `/help`, `/remember`, `/tokens`, `/threads`, `/model`, `/spawns`, `/quit`
+`/clear`, `/help`, `/remember`, `/tokens`, `/threads`, `/model`, `/spawns`, `/quit`.
 
 ## Environment
 
 ```bash
-# LLM keys (at least one required)
+# LLM keys (at least one)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=AIza...
 
-# API URLs (optional, defaults to production)
-BASEMENT_API=https://basement.embient.ai
-PARK_API=https://park.embient.ai
+# API URLs (default to production)
+BASEMENT_API=https://basement.deepalpha.mn
+PARK_API=https://park.deepalpha.mn
 
-# Trading defaults (optional)
-EMBIENT_DEFAULT_SYMBOL=BTC/USDT
-EMBIENT_DEFAULT_EXCHANGE=binance
-EMBIENT_DEFAULT_INTERVAL=4h
-
-# LangSmith (optional)
-EMBIENT_LANGSMITH_PROJECT=embient-cli
+# Optional
+DEEPALPHA_DEFAULT_SYMBOL=BTC/USDT
+DEEPALPHA_DEFAULT_EXCHANGE=binance
+DEEPALPHA_DEFAULT_INTERVAL=4h
+DEEPALPHA_LANGSMITH_PROJECT=deepalpha-cli
 LANGCHAIN_API_KEY=...
 ```
 
-## Adding a New Tool
+## Adding a tool
 
-1. Create in `embient/trading_tools/` with `@tool` + Pydantic schema
-2. Require auth: `token = get_jwt_token(); if not token: raise ToolException(...)`
-3. Export from `__init__.py`
-4. Add to appropriate tool list in `embient/analysts/graph.py`
+1. Create it in `deepalpha/trading_tools/<group>/` with `@tool` + Pydantic schema.
+2. Pull the session token: `token = get_jwt_token(); if not token: raise ToolException(...)`.
+3. Export from the group's `__init__.py`.
+4. Wire it into the appropriate tool list in `deepalpha/analysts/graph.py` (orchestrator vs subagent).

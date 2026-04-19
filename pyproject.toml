@@ -1,7 +1,7 @@
 [project]
-name = "embient"
+name = "deepalpha"
 version = "0.1.12"
-description = "Embient CLI - AI Trading Team"
+description = "DeepAlpha CLI - AI Trading Team"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11,<4.0"
@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [project.scripts]
-embient = "embient:cli_main"
+deepalpha = "deepalpha:cli_main"
 
 [dependency-groups]
 dev = ["ruff>=0.14.13"]
@@ -61,10 +61,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["embient*"]
+include = ["deepalpha*"]
 
 [tool.setuptools.package-data]
-embient = ["default_agent_prompt.md", "prompts/**/*.md", "*.tcss", "py.typed"]
+deepalpha = ["default_agent_prompt.md", "prompts/**/*.md", "*.tcss", "py.typed"]
 
 [tool.ruff]
 line-length = 120
@@ -104,7 +104,7 @@ allow-star-arg-any = true
 [tool.ruff.lint.isort]
 force-single-line = false
 combine-as-imports = true
-known-first-party = ["embient"]
+known-first-party = ["deepalpha"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"        # Google-style docstrings
@@ -113,20 +113,20 @@ ignore-var-parameters = true
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S", "RUF001", "RUF059"]  # Security relaxed, unicode ok, unused vars
 "libs/*" = ["B024", "B027", "S105", "F401", "S603", "S607", "RUF005"]  # Protocol patterns, test, subprocess
-"embient/shell.py" = ["S602"] # Intentional shell usage
-"embient/image_utils.py" = ["S603", "S607"]
-"embient/local_context.py" = ["S603", "S607"]
-"embient/integrations/modal_integration.py" = ["S602", "S603", "S604", "S607"]
-"embient/core/api_credentials.py" = ["S603", "S607"]
-"embient/utils.py" = ["S604", "S607"]
-"embient/config.py" = ["E402"] # Import not at top
-"embient/integrations/runloop.py" = [
+"deepalpha/shell.py" = ["S602"] # Intentional shell usage
+"deepalpha/image_utils.py" = ["S603", "S607"]
+"deepalpha/local_context.py" = ["S603", "S607"]
+"deepalpha/integrations/modal_integration.py" = ["S602", "S603", "S604", "S607"]
+"deepalpha/core/api_credentials.py" = ["S603", "S607"]
+"deepalpha/utils.py" = ["S604", "S607"]
+"deepalpha/config.py" = ["E402"] # Import not at top
+"deepalpha/integrations/runloop.py" = [
     "F401",
     "B904",
 ] # Unused import (re-export), raise from
-"embient/skills.py" = ["F821", "S102"] # Dynamic exec usage
-"embient/tools.py" = ["E722", "S113"] # Bare except, request timeout
-"embient/widgets/approval.py" = [
+"deepalpha/skills.py" = ["F821", "S102"] # Dynamic exec usage
+"deepalpha/tools.py" = ["E722", "S113"] # Bare except, request timeout
+"deepalpha/widgets/approval.py" = [
     "B007",
     "RUF001",
 ] # Unused loop var, unicode char

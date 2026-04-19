@@ -4,13 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from embient.utils.prompt_loader import _load_raw, compose_prompt, load_prompt
+from deepalpha.utils.prompt_loader import _load_raw, compose_prompt, load_prompt
 
 
 @pytest.fixture(autouse=True)
 def _isolated_prompts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Redirect prompt loading to tmp_path and clear LRU cache between tests."""
-    monkeypatch.setattr("embient.utils.prompt_loader._PROMPTS_DIR", tmp_path)
+    monkeypatch.setattr("deepalpha.utils.prompt_loader._PROMPTS_DIR", tmp_path)
     yield
     _load_raw.cache_clear()
 

@@ -18,8 +18,8 @@ from deepanalysts.backends import CompositeBackend
 middleware = MemoryMiddleware(
     backend=backend,
     sources=[
-        "~/.embient/AGENTS.md",
-        "./.embient/AGENTS.md",
+        "~/.deepalpha/AGENTS.md",
+        "./.deepalpha/AGENTS.md",
     ],
 )
 
@@ -142,8 +142,8 @@ class MemoryMiddleware(AgentMiddleware):
             backend: Backend instance or factory function that takes runtime
                      and returns a backend. Use a factory for StateBackend.
                      Optional if using loader mode.
-            sources: List of memory file paths to load (e.g., ["~/.embient/AGENTS.md",
-                     "./.embient/AGENTS.md"]). Display names are automatically derived
+            sources: List of memory file paths to load (e.g., ["~/.deepalpha/AGENTS.md",
+                     "./.deepalpha/AGENTS.md"]). Display names are automatically derived
                      from the paths. Sources are loaded in order. Optional if using loader.
             loader: Optional loader for API-based memory loading.
                     When provided, takes precedence over backend/sources.

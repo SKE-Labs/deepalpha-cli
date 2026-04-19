@@ -1,4 +1,4 @@
-# Embient CLI Tests
+# DeepAlpha CLI Tests
 
 ## API Keys
 

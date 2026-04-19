@@ -1,4 +1,4 @@
-"""End-to-end unit tests for embient-cli with fake LLM models."""
+"""End-to-end unit tests for deepalpha-cli with fake LLM models."""
 
 import uuid
 from collections.abc import Callable, Generator, Sequence
@@ -14,7 +14,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool, tool
 
-from embient.agent import create_cli_agent
+from deepalpha.agent import create_cli_agent
 
 
 @tool(description="Sample tool")
@@ -58,8 +58,8 @@ def mock_settings(tmp_path: Path, assistant_id: str = "test-agent") -> Generator
     skills_dir.mkdir(parents=True)
 
     # Patch settings
-    with patch("embient.agent.settings") as mock_settings_obj:
-        mock_settings_obj.user_embient_dir = tmp_path / "agents"
+    with patch("deepalpha.agent.settings") as mock_settings_obj:
+        mock_settings_obj.user_deepalpha_dir = tmp_path / "agents"
         mock_settings_obj.ensure_agent_dir.return_value = agent_dir
         mock_settings_obj.ensure_user_skills_dir.return_value = skills_dir
         mock_settings_obj.get_project_skills_dir.return_value = None
@@ -80,8 +80,8 @@ def mock_settings(tmp_path: Path, assistant_id: str = "test-agent") -> Generator
         yield agent_dir
 
 
-class TestEmbientCLIEndToEnd:
-    """Test suite for end-to-end embient-cli functionality with fake LLM."""
+class TestDeepAlphaCLIEndToEnd:
+    """Test suite for end-to-end deepalpha-cli functionality with fake LLM."""
 
     def test_cli_agent_with_fake_llm_basic(self, tmp_path: Path) -> None:
         """Test basic CLI agent functionality with a fake LLM model.

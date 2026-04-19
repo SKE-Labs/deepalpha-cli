@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from embient.config import (
+from deepalpha.config import (
     _find_project_agent_md,
     _find_project_root,
     validate_model_capabilities,
@@ -59,15 +59,15 @@ class TestProjectRootDetection:
 class TestProjectAgentMdFinding:
     """Test finding project-specific AGENTS.md files."""
 
-    def test_find_agent_md_in_embient_dir(self, tmp_path: Path) -> None:
-        """Test finding AGENTS.md in .embient/ directory."""
+    def test_find_agent_md_in_deepalpha_dir(self, tmp_path: Path) -> None:
+        """Test finding AGENTS.md in .deepalpha/ directory."""
         project_root = tmp_path / "project"
         project_root.mkdir()
 
-        # Create .embient/AGENTS.md
-        embient_dir = project_root / ".embient"
-        embient_dir.mkdir()
-        agent_md = embient_dir / "AGENTS.md"
+        # Create .deepalpha/AGENTS.md
+        deepalpha_dir = project_root / ".deepalpha"
+        deepalpha_dir.mkdir()
+        agent_md = deepalpha_dir / "AGENTS.md"
         agent_md.write_text("Project instructions")
 
         result = _find_project_agent_md(project_root)
@@ -79,7 +79,7 @@ class TestProjectAgentMdFinding:
         project_root = tmp_path / "project"
         project_root.mkdir()
 
-        # Create root-level AGENTS.md (no .embient/)
+        # Create root-level AGENTS.md (no .deepalpha/)
         agent_md = project_root / "AGENTS.md"
         agent_md.write_text("Project instructions")
 
@@ -93,18 +93,18 @@ class TestProjectAgentMdFinding:
         project_root.mkdir()
 
         # Create both locations
-        embient_dir = project_root / ".embient"
-        embient_dir.mkdir()
-        embient_md = embient_dir / "AGENTS.md"
-        embient_md.write_text("In .embient/")
+        deepalpha_dir = project_root / ".deepalpha"
+        deepalpha_dir.mkdir()
+        deepalpha_md = deepalpha_dir / "AGENTS.md"
+        deepalpha_md.write_text("In .deepalpha/")
 
         root_md = project_root / "AGENTS.md"
         root_md.write_text("In root")
 
-        # Should return both, with .embient/ first
+        # Should return both, with .deepalpha/ first
         result = _find_project_agent_md(project_root)
         assert len(result) == 2
-        assert result[0] == embient_md
+        assert result[0] == deepalpha_md
         assert result[1] == root_md
 
     def test_find_agent_md_not_found(self, tmp_path: Path) -> None:
@@ -119,7 +119,7 @@ class TestProjectAgentMdFinding:
 class TestValidateModelCapabilities:
     """Tests for model capability validation."""
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_without_profile_attribute_warns(self, mock_console: Mock) -> None:
         """Test that models without profile attribute trigger a warning."""
         model = Mock(spec=[])  # No profile attribute
@@ -130,7 +130,7 @@ class TestValidateModelCapabilities:
         assert "No capability profile" in call_args
         assert "test-model" in call_args
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_none_profile_warns(self, mock_console: Mock) -> None:
         """Test that models with `profile=None` trigger a warning."""
         model = Mock()
@@ -142,7 +142,7 @@ class TestValidateModelCapabilities:
         call_args = mock_console.print.call_args[0][0]
         assert "No capability profile" in call_args
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_tool_calling_false_exits(self, mock_console: Mock) -> None:
         """Test that models with `tool_calling=False` cause `sys.exit(1)`."""
         model = Mock()
@@ -158,7 +158,7 @@ class TestValidateModelCapabilities:
         assert "does not support tool calling" in error_call
         assert "no-tools-model" in error_call
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_tool_calling_true_passes(self, mock_console: Mock) -> None:
         """Test that models with `tool_calling=True` pass without messages."""
         model = Mock()
@@ -168,7 +168,7 @@ class TestValidateModelCapabilities:
 
         mock_console.print.assert_not_called()
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_tool_calling_none_passes(self, mock_console: Mock) -> None:
         """Test that models with `tool_calling=None` (missing) pass."""
         model = Mock()
@@ -178,7 +178,7 @@ class TestValidateModelCapabilities:
 
         mock_console.print.assert_not_called()
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_limited_context_warns(self, mock_console: Mock) -> None:
         """Test that models with <8000 token context trigger a warning."""
         model = Mock()
@@ -192,7 +192,7 @@ class TestValidateModelCapabilities:
         assert "4,096" in call_args
         assert "small-context-model" in call_args
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_adequate_context_passes(self, mock_console: Mock) -> None:
         """Confirm that models with >=8000 token context pass silently."""
         model = Mock()
@@ -202,7 +202,7 @@ class TestValidateModelCapabilities:
 
         mock_console.print.assert_not_called()
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_without_max_input_tokens_passes(self, mock_console: Mock) -> None:
         """Test that models without `max_input_tokens` key pass silently."""
         model = Mock()
@@ -212,7 +212,7 @@ class TestValidateModelCapabilities:
 
         mock_console.print.assert_not_called()
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_zero_max_input_tokens_passes(self, mock_console: Mock) -> None:
         """Test that models with `max_input_tokens=0` pass (falsy value check)."""
         model = Mock()
@@ -223,7 +223,7 @@ class TestValidateModelCapabilities:
         # Should pass because 0 is falsy, so the condition `if max_input_tokens` fails
         mock_console.print.assert_not_called()
 
-    @patch("embient.config.console")
+    @patch("deepalpha.config.console")
     def test_model_with_empty_profile_passes(self, mock_console: Mock) -> None:
         """Test that models with empty profile dict pass silently."""
         model = Mock()
